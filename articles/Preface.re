@@ -2,23 +2,23 @@
 = まえがき
 
 
-本書は主にUnityによるグラフィクスプログラミングに関する技術を解説する本です。
-グラフィクスプログラミングと一言で言っても幅広く、Shaderテクニックだけ取り上げても多くの書籍が出版されています。
-本書でも、執筆者たちの興味の赴くままに取り上げられた様々なトピックについての記事が掲載されていますが、ビジュアルとしての結果が見えやすく、自分のエフェクト作成に役立てやすい内容が多いはずです。
-また、各章で解説されているソースコードについては@<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming,https://github.com/IndieVisualLab/UnityGraphicsProgramming}にて公開していますので、手元で実行しながら本書を読み進めることができます。
+This book mainly describes the technology related to graphics programming by Unity.
+Graphics programming is broad in one word, and many books have been published even if only Shader technique is taken up.
+This book also contains articles on various topics that were taken up by the authors' interests, but the visual results should be easy to see and should be useful for creating your own effects.
+The source code explained in each chapter is available at @<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming,https://github.com/IndieVisualLab/UnityGraphicsProgramming}. You can read this book while you run it.
 
 
-記事によって難易度は様々で、読者の知識量によっては、物足りなかったり、難しすぎる内容のものがあるかと思います。自分の知識量に応じて、気になったトピックの記事を読むのが良いでしょう。
-普段仕事でグラフィクスプログラミングを行っている人にとって、エフェクトの引き出しを増やすことにつながれば幸いですし、
-学生の方でビジュアルコーディングに興味があり、ProcessingやopenFrameworksなどは触ったことはあるが、まだまだ3DCGに高い敷居を感じている方にとっては、Unityを導入として3DCGでの表現力の高さや開発の取っ掛かりを知る機会になれば嬉しいです。
+The degree of difficulty varies depending on the article, and depending on the amount of knowledge of the reader, there may be something that is insufficient or too difficult. Depending on how much you know, it's a good idea to read articles on topics of interest.
+For those who do graphics programming on a regular basis, I hope it will lead to more effects.
+For students who are interested in visual coding and have touched Processing, openFrameworks, etc., but for those who still feel a high threshold in 3DCG, introducing Unity as a high expression power and development of 3DCG I would be happy if it was an opportunity to get to know the details.
 
 
-IndieVisualLabは、会社の同僚(&元同僚)たちによって立ち上げられたサークルです。
-社内ではUnityを使って、一般的にメディアアートと呼ばれる部類の展示作品のコンテンツプログラミングをやっており、ゲーム系とはまた一味違ったUnityの活用をしています。
-本書の中にも節々に展示作品の中でUnityを活用する際に役立つ知識が散りばめられているかもしれません。
+IndieVisualLab is a circle set up by current (and former) colleagues of IndieVisualLab.
+We use Unity in-house to program the content of exhibition works that are generally called media art, and we are using Unity, which is a bit different from game-based games.
+This book may be populated with knowledge useful in utilizing Unity in the exhibited works.
 
-== 本についての要望や感想
+== Requests and impressions about the book
 
-本書についての感想や気になった点、その他要望（〇〇についての解説が読みたい等）がありましたら、ぜひWebフォーム（@<href>{https://docs.google.com/forms/d/e/1FAIpQLSdxeansJvQGTWfZTBN_2RTuCK_kRqhA6QHTZKVXHCijQnC8zw/viewform}）、またはメール（lab.indievisual@gmail.com）よりお知らせください。
+If you have any thoughts or concerns about this book, or if you have any other requests (such as wanting to read the explanation about 〇〇), please feel free to use the web form (@<href>{https://docs.google.com/forms/d Please let us know via /e/1FAIpQLSdxeansJvQGTWfZTBN_2RTuCK_kRqhA6QHTZKVXHCijQnC8zw/viewform}) or email (lab.indievisual@gmail.com).
 
 
