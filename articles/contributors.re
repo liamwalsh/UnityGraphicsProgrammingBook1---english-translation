@@ -1,90 +1,90 @@
-= 著者紹介
+= About the authors
 
-==== 第1章 Unityではじめるプロシージャルモデリング - 中村将達 / @mattatz
+==== Chapter 1 Beginning with Procedural Modeling in Unity - Masatatsu Nakamura / @mattatz
 
-インスタレーション、サイネージ、Web（フロントエンド・バックエンド）、スマートフォンアプリなど、来た球はなるべく全部打つようにしています。
+I try to hit all the balls that come, such as installations, signage, Web (front end/back end), and smartphone apps.
 
  * @<href>{https://twitter.com/mattatz}
  * @<href>{https://github.com/mattatz}
  * @<href>{http://mattatz.org/}
 
-==== 第2章 ComputeShader入門 - @XJINE
+==== Chapter 2 Getting Started with ComputeShader - @XJINE
 
-勢いと雰囲気だけで生きてるうちに、唐突にインタラクティブアーティスト・エンジニアになってしまって、とても大変なことになってしまった。
-周りの人たちに助けられながら、勉強させてもらいながら、なんとかやっています。
+While living only with the momentum and atmosphere, I suddenly became an interactive artist and engineer, and it became very difficult.
+I am doing it while being studied while being helped by the people around me.
 
  * @<href>{https://twitter.com/XJINE}
  * @<href>{https://github.com/XJINE}
  * @<href>{http://neareal.com/}
 
-==== 第3章 群のシミュレーションのGPU実装 - 大石啓明 / @irishoak
+==== Chapter 3 GPU Implementation of Swarm Simulation (Flocking) - 大石啓明 (Hiroaki Oishi) / @irishoak
 
-インタラクションエンジニア。インスタレーション、サイネージ、舞台演出、MV、コンサート映像、VJなどの映像表現領域で、リアルタイム、プロシージャルの特性を生かしたコンテンツの制作を行っている。
-sugi-choとmattatzとでAqueductというユニットを組んで数回活動したことがある。
+Interaction engineer. In the field of video expression such as installation, signage, stage production, MV, concert video, VJ, etc., we are producing contents that take advantage of real-time and procedural characteristics.
+I have worked several times with sugi-cho and mattatz as a unit called Aqueduct.
 
  * @<href>{https://twitter.com/_irishoak}
  * @<href>{https://github.com/hiroakioishi}
  * @<href>{http://irishoak.tumblr.com/}
  * @<href>{https://a9ueduct.github.io/}
 
-==== 第4章 格子法による流体シミュレーション - 迫田吉昭 / @sakope
+==== Chapter 4 Fluid Simulation by Lattice Method - Yoshiaki Sakoda / @sakope
 
-元ゲーム開発会社テクニカルアーティスト。アート・デザイン・音楽が好きで、インタラクティブアートに転向。
-趣味はサンプラー・シンセ・楽器・レコード・機材いじり。
-Twitterはじめました。
+Former technical developer of game development company. Loves art, design and music, and turned to interactive art.
+Hobbies are samplers, synths, musical instruments, records, and messing around with equipment.
+I started Twitter.
 
  * @<href>{https://twitter.com/sakope}
  * @<href>{https://github.com/sakope}
 
-==== 第5章 SPH法による流体シミュレーション - 高尾航大 / @kodai100
+==== Chapter 5 Fluid Simulation by SPH Method - 高尾航大 / @kodai100
 
-インタラクティブアーティスト・エンジニア兼、学生。
-大学で雪の物理シミュレーションを研究している傍らエンジニアリングに勤しんでいる。
-最近はTouchDesignerに浮気中。是非twitterでお話ししましょう。
+Interactive artist/engineer and student.
+He also works in engineering while studying physics simulation of snow at university.
+Recently, I am having an affair with Touch Designer. Let's talk on twitter.
 
  * @<href>{https://twitter.com/m1ke_wazowsk1}
  * @<href>{https://github.com/kodai100}
  * @<href>{http://creativeuniverse.tokyo/portfolio/}
 
-==== 第6章 ジオメトリシェーダで草を生やす - @a3geek
+==== Chapter 6 Growing Grass with Geometry Shaders - @a3geek
 
-インタラクションエンジニア・雑魚系疾風のプログラマ・ゆるふわガチ勢・わりと何でも作る何でも屋さん。
-好きな学校の教室は図工室か図書室。
+An interaction engineer, a programmer of a small fish system, a fluffy gachi, and a shop that makes anything.
+My favorite classroom is a library or library.
 
  * @<href>{https://twitter.com/a3geek}
  * @<href>{https://github.com/a3geek}
 
-==== 第7章 雰囲気ではじめるマーチングキューブス法入門 - @kaiware007
+==== Chapter 7 Introduction to the Marching Cubes Method Starting with Atmosphere - @kaiware007
 
-雰囲気でやるインタラクティブアーティスト・エンジニア。
-三度のメシよりインタラクティブコンテンツ好き。お芋が好きでカイワレは食べない。
-ジェネ系の動画をTwitterによく上げている。たまにVJをやる。
+An interactive artist engineer who works in an atmosphere.
+I like interactive contents more than three times. I like sweet potatoes and I don't eat kaiware.
+I often post Gene videos on Twitter. Sometimes I do VJ.
 
  * @<href>{https://twitter.com/kaiware007}
  * @<href>{https://github.com/kaiware007}
  * @<href>{https://www.instagram.com/kaiware007/}
 
-==== 第8章 MCMCで行う3次元空間サンプリング - @ komietty
+==== Chapter 8 3D spatial sampling with MCMC - @ komietty
 
-インタラクティブエンジニア。
-Web制作、グラフィックデザインのお仕事も個人でやってます。
-制作のご依頼はtwitterまで。
+Interactive engineer.
+I also do web production and graphic design work individually.
+For production requests, please visit twitter.
 
  * @<href>{https://github.com/komietty}
  * @<href>{https://twitter.com/9_chinashi}
 
-==== 第9章 MultiPlanePerspectiveProjection - 福永秀和 / @fuqunaga
+==== Chapter 9 MultiPlanePerspectiveProjection - 福永秀和 / @fuqunaga
 
-元ゲーム開発者、現インタラクティブアーティスト・エンジニア。
-健康に気を使おうと朝ごはんを食べるようにしたらなぜか２ｋｇほど痩せた。
+Former game developer, current interactive artist engineer.
+I tried to eat breakfast to keep my health, and for some reason I lost weight by about 2 kg.
 
  * @<href>{https://twitter.com/fuqunaga}
  * @<href>{https://github.com/fuqunaga}
  * @<href>{https://fuquna.ga}
 
-==== 第10章 ProjectionSprayの紹介 - すぎのひろのり / @sugi_cho
+==== Chapter 10 Introduction to Projection Spray - Hirono Sugi / @sugi_cho
 
-Unityでインタラクティブアートを作る人間。フリーランス。
+A person who creates interactive art with Unity. Freelance.
 hi@sugi.cc
 
  * @<href>{https://twitter.com/sugi_cho}
