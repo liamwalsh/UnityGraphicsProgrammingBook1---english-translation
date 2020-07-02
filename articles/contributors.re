@@ -1,5 +1,8 @@
 = About the authors
 
+==== Translation by Liam Walsh @evilliam who speaks absolutely no Japanese and is at best a mediocre graphics programmer.
+I am Creative Technology Director at Nexus Studios where I have become reacquainted with Unity after many years with native iOS, openframeworks, Three.JS and Cinder
+
 ==== Chapter 1 Beginning with Procedural Modeling in Unity - Masatatsu Nakamura / @mattatz
 
 I try to hit all the balls that come, such as installations, signage, Web (front end/back end), and smartphone apps.

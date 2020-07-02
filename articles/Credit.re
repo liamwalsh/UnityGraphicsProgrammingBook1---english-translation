@@ -1,6 +1,6 @@
-= 権利について
+= About rights (copyri)
 
-コンテンツデータの著作権は全て著作権者に帰属します。
-コンテンツデータは、再出版、展示、頒布、譲渡、貸与、翻案、公衆送信することはできません。著作権者に同意を得ない上記の行為は、著作権侵害となり、著作権法およびその他の知的財産権に関する法律ならびに条約により禁止されております。たとえば、データの一部または全部を著作権者の許諾を得ずにホームページに転載することや、社内のLANなどで配信することは違法行為となります。
-著作権者は、購入者の違法行為により生じた一切の損害、損失および費用の賠償を警告なく、購入者に対して請求するものとします。
-ダウンロードしたコンテンツデータの権利は著作権者が購入者に譲渡するものではありません。購入者は所持する記憶媒体にデータを保管し所持しますが、コンテンツデータの所有権その他すべての権利およびコンテンツデータに含まれるすべての知的財産権は著作権者に帰属するものとし、購入者はコンテンツデータを閲覧する権限のみが許諾されるものとします。
+The copyright of all content data belongs to the copyright holder.
+Content data cannot be republished, exhibited, distributed, transferred, loaned, adapted, or sent to the public. The above acts without the consent of the copyright holder are copyright infringements and are prohibited by copyright law and other intellectual property laws and treaties. For example, it is illegal to reprint a part or all of the data on the website without the permission of the copyright holder, or to distribute it on an internal LAN.
+The copyright owner shall, without warning, claim against the buyer any damages, losses and costs incurred by the buyer's illegal acts.
+The copyright of the downloaded content data is not transferred to the purchaser by the copyright holder. The purchaser stores and owns the data in his/her own storage medium.However, all other rights of the content data and all intellectual property rights contained in the content data shall belong to the copyright holder. Is only authorized to view content data.
