@@ -1,79 +1,83 @@
 
-= Unityではじめるプロシージャルモデリング
+= Procedural Modeling with Unity
 
-== はじめに
+== Introduction
 
-プロシージャルモデリング（Procedural Modeling）とは、ルールを利用して3Dモデルを構築するテクニックのことです。
-モデリングというと、一般的にはモデリングソフトであるBlenderや3ds Maxなどを利用して、頂点や線分を動かしつつ目標とする形を得るように手で操作をしていくことを指しますが、それとは対象的に、ルールを記述し、自動化された一連の処理の結果、形を得るアプローチのことをプロシージャルモデリングと呼びます。
+Procedural Modeling is a technique for building 3D models using rules.
+Modeling generally means using the modeling software Blender or 3ds Max to move the vertices and line segments and operate by hand to obtain the desired shape. By contrast, the approach of writing rules and obtaining the shape as a result of a series of automated processes is called procedural modeling.
 
-プロシージャルモデリングは様々な分野で応用されていて、例えばゲームでは、地形の生成や植物の造形、都市の構築などで利用されている例があり、この技術を用いることで、プレイするごとにステージ構造が変わるなどといったコンテンツデザインが可能になります。
+Procedural modeling has been applied in various fields, and for example, in games, it is used for generation of terrain, modeling of plants, construction of cities, etc. It enables content design such as changing the structure.
 
-また、建築やプロダクトデザインの分野でも、Rhinoceros@<fn>{rhinoceros}というCADソフトのプラグインであるGrasshopper@<fn>{grasshopper}を使って、プロシージャルに形状をデザインする手法が活発に利用されています。
+Also in the field of architecture and product design, the method of procedurally designing shapes is actively used using Grasshopper@<fn>{grasshopper}, which is a CAD software plug-in called Rhinoceros@<fn>{rhinoceros}. It has been. LW:TODO:edit
 //footnote[rhinoceros][http://www.rhino3d.co.jp/]
 //footnote[grasshopper][http://www.grasshopper3d.com/]
 
-プロシージャルモデリングを使えば以下のようなことが可能になります。
+With procedural modeling, you can:
 
- * パラメトリックな構造を作ることができる
- * 柔軟に操作できるモデルをコンテンツに組み込むことができる
+ * Can create parametric structures
+ * A flexible, changeable and dynamic model can be incorporated into the content.
 
-=== パラメトリックな構造を作ることができる
+=== Creating Parametric Structures
 
-パラメトリックな構造とは、あるパラメータに応じて構造が持つ要素を変形させられる構造のことで、例えば球（Sphere）のモデルであれば、大きさを表す半径（radius）と、球の滑らかさを表す分割数（segments）といったパラメータが定義でき、それらの値を変化させることで望むサイズや滑らかさを持つ球を得ることができます。
+A parametric structure is a structure in which the elements of the structure can be deformed according to certain parameters. For example, in the case of a sphere model, the radius representing the size and the smoothness of the sphere Parameters such as the number of segments to represent can be defined, and by changing those values, a sphere with the desired size and smoothness can be obtained.
 
-パラメトリックな構造を定義するプログラムを一度実装してしまえば、様々な場面で特定の構造を持つモデルを欲しい形で得ることができ、便利です。
+Once you have implemented the program that defines the parametric structure, you can get a model with a specific structure in various situations, which is convenient.
 
-=== 柔軟に操作できるモデルをコンテンツに組み込むことができる
+=== A flexible, dynamic model
 
-前述の通り、ゲームなどの分野においては、地形や樹木の生成にプロシージャルモデリングが利用される例はとても多く、一度モデルとして書き出されたものを組み込むのではなく、コンテンツ内でリアルタイムに生成されることもあります。
-リアルタイムなコンテンツにプロシージャルモデリングのテクニックを利用すると、例えば太陽に向かって生える木を任意の位置に生成したり、クリックした位置からビルが立ち並んでいくように街を構築したりするようなことが実現できます。
+As mentioned above, in fields such as games, there are many cases where procedural modeling is used to generate terrain and trees. Instead of incorporating what was once exported as a model, it is generated in real time in the content. There are also cases.
+By using procedural modeling techniques for real-time content, you can create trees that grow toward the sun at any position, or build a city so that buildings line up from the clicked position. These are just illustrations of the type of content that can be realized.
 
-また、様々なパターンのモデルをコンテンツに組み込むとデータサイズが膨らんでしまいますが、プロシージャルモデリングを利用してモデルのバリエーションを増やせば、データサイズを抑えることができます。
+In addition, if you incorporate various patterns of models into the content, the data size will swell, but you can reduce the data size by using procedural modeling to increase the variation of the model.
 
-プロシージャルモデリングのテクニックを学び、プログラムによってモデルを構築していくことを極めていけば、モデリングツールそのものを自分で開発することも可能になるでしょう。
+By learning procedural modeling techniques and building models programmatically, it will be possible to develop the modeling tools themselves.
 
-== Unityでのモデル表現
+== Model representation in Unity
 
-Unityでは、モデルの形を表すジオメトリデータをMeshクラスによって管理します。
+In Unity, the geometry data that represents the shape of the model is managed by the Mesh class.
 
-モデルの形は3D空間に並べられた三角形から構成されていて、1つの三角形は3つの頂点により定義されます。
-モデルが持つ頂点と三角形データのMeshクラスでの管理方法について、Unityの公式ドキュメントで以下のように解説されています。
+The shape of the model consists of triangles arranged in 3D space, where one triangle is defined by three vertices.
+The official Unity document explains how to manage the vertex and triangle data of the model in the Mesh class as follows.
 
 //quote{
-Meshクラスでは、すべての頂点はひとつの配列に格納されていて、それぞれの三角形は頂点配列のインデックスにあたる3つの整数により指定されます。三角形はさらに1つの整数の配列として集められます。この整数は配列の最初から3つごとにグルーピングされるため、要素 0、1、2は最初の三角形を定義し、2つ目の三角形は3、4、5と続いていきます。
+In the Mesh class, all vertices are stored in one array, and each triangle is specified by three integers that are indices into the vertex array. Triangles are also collected as an array of integers. The integers are grouped by every third from the beginning of the array, so elements 0, 1, and 2 define the first triangle, the second triangle is 3, 4, and so on.
 @<fn>{mesh}
 
 //}
 
 //footnote[mesh][https://docs.unity3d.com/jp/540/Manual/AnatomyofaMesh.html]
 
-モデルには、それぞれの頂点に対応するように、テクスチャマッピングを行うために必要なテクスチャ上の座標を表すuv座標、ライティング時に光源の影響度を計算するために必要な法線ベクトル（normalとも呼ばれます）を含められます。
+== LW:Note - 
+this is garbled, rewrite: a descrption of how the mesh class works, how it is made up of triangles, how the data is stored and how it uses uvs to be textured.
+== End Note
 
-==== サンプルリポジトリ
+The model has uv coordinates that represent the coordinates on the texture that are necessary for texture mapping so as to correspond to each vertex, and a normal vector (also called normal) that is needed to calculate the influence of the light source during lighting. Will be included.
 
-本章ではhttps://github.com/IndieVisualLab/UnityGraphicsProgrammingリポジトリ内にあるAssets/ProceduralModeling以下をサンプルプログラムとして用意しています。
+==== Sample repository
 
-C#スクリプトによるモデル生成が主な解説内容となるため、
-Assets/ProceduralModeling/Scripts以下にあるC#スクリプトを参照しつつ、解説を進めていきます。
+In this chapter, the following Assets/Procedural Modeling in https://github.com/IndieVisualLab/UnityGraphicsProgramming repository is prepared as a sample program.
 
-===== 実行環境
+Since the model description by C# script is the main explanation content,
+We will continue to explain while referring to the C# scripts under Assets/ProceduralModeling/Scripts.
 
-本章のサンプルコードはUnity5.0以上で動作することを確認しています。
+===== Execution environment
+
+The sample code in this chapter has been confirmed to work with Unity 5.0 or higher.
 
 === Quad
 
-基本的なモデルであるQuadを例として、モデルをプログラムから構築する方法を解説していきます。
-Quadは4つの頂点からなる2枚の三角形を合わせた正方形モデルで、UnityではPrimitive Meshとしてデフォルトで提供されていますが、最も基本的な形状であるため、モデルの構造を理解するための例として役立ちます。
+Using the basic model Quad as an example, I will explain how to build a model programmatically.
+Quad is a square model that combines two triangles with four vertices, and is provided as a Primitive Mesh by default in Unity, but since it is the most basic shape, it is an example to understand the structure of the model. Useful
 
 //image[ProceduralModeling_quad][Quadモデルの構造　黒丸はモデルの頂点を表し、黒丸内の0〜3の数字は頂点のindexを示している　矢印は一枚の三角形を構築する頂点indexの指定順（右上は0,1,2の順番で指定された三角形、左下は2,3,0の順番で指定された三角形）]{
 //}
 
-==== サンプルプログラム Quad.cs
+==== Sample program Quad.cs
 
-まずはMeshクラスのインスタンスを生成します。
+First, create an instance of the Mesh class.
 
 //emlist[][cs]{
-// Meshのインスタンスを生成
+// Create an instance of Mesh
 var mesh = new Mesh();
 //}
 
