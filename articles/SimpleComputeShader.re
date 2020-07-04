@@ -1,77 +1,75 @@
-= ComputeShader 入門
+= ComputeShader: Getting Started
 
 
-Unity で ComputeShader (以降必要に応じて"コンピュートシェーダ") を使う方法について、シンプルに解説します。
-コンピュートシェーダとは、GPU を使って単純処理を並列化し、大量の演算を高速に実行するために用いられます。
-また GPU に処理を委譲しますが、通常のレンダリングパイプラインとは異なることが特徴に挙げられます。
-CG においては、大量のパーティクルの動きを表現するためなどに良く用いられます。
+A simple explanation of how to use ComputeShader (hereafter "compute shader" if needed) in Unity.
+Compute shader is used to execute a large number of operations at high speed by parallelizing simple processing using GPU.
+It also delegates processing to the GPU, but is characterized by a difference from the normal rendering pipeline.
+It is often used in CG to represent the movement of a large number of particles.
 
-本章の以降に続く内容の一部にも、コンピュートシェーダが用いられたものがあり、
-それらを読み進める上で、コンピュートシェーダの知識が必要になります。
+Some of the content that follows this chapter also uses compute shaders,
+Knowledge of compute shaders is required to read through them.
 
-ここではコンピュートシェーダを学習するにあたって、
-一番最初の足掛かりになるような内容について、2 つの簡単なサンプルを用いて解説しています。
-これらはコンピュートシェーダのすべての事について扱うものではありませんので、必要に応じて情報を補うようにしてください。
+Here, in learning Compute Shader,
+We'll use two simple samples to get you started with the very first step.
+These do not cover all aspects of compute shaders, so make sure to supplement the information as needed.
 
-Unity においては ComputeShader と呼称していますが、
-類似する技術に OpenCL, DirectCompute, CUDA などが挙げられます。
-基本概念は類似しており、特に DirectCompute(DirectX) と非常に近い関係にあります。
-もしアーキテクチャ周辺の概念や更なる詳細情報が必要になるときは、
-これらについても合わせて情報を集めるようにすると良いと思います。
+In Unity it's called ComputeShader,
+Similar technologies include OpenCL, DirectCompute, and CUDA.
+The basic concepts are similar and are very closely related to DirectCompute(DirectX).
+If you need concepts around the architecture or more details,
+I think it would be good to collect information on these items as well.
 
-本章のサンプルは @<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming} の「SimpleComputeShader」です。
-
-
-== カーネル、スレッド、グループの概念
+The sample in this chapter is "SimpleComputeShader" from @<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming}.
+== Kernel, thread, group concept
 
 
-//image[primerofcomputeshader01][カーネル、スレッド、グループのイメージ][scale=1]
+//image[primerofcomputeshader01][Images of kernels, threads and groups][scale=1]
 
-具体的な実装を解説するよりも前に、コンピュートシェーダで取り扱われる @<b>{カーネル(Kernel)}、
-@<b>{スレッド(Thread)}、@<b>{グループ(Group)} の概念を説明しておく必要があります。
-
-
-@<b>{カーネル} とは、GPU で実行される 1 つの処理を指し、
-コード上では 1 つの関数として扱われます(一般的なシステム用語における意味でのカーネルに相当)。
-
-@<b>{スレッド}とは、カーネルを実行する単位です。1 スレッドが、1 カーネルを実行します。
-コンピュートシェーダではカーネルを複数のスレッドで並行して同時に実行することができます。
-スレッドは (x, y, z) の3次元で指定しす。
-
-例えば、(4, 1, 1) なら 4 * 1 * 1 = 4 つのスレッドが同時に実行されます。
-(2, 2, 1) なら、2 * 2 * 1 = 4 つのスレッドが同時に実行されます。
-同じ 4 つのスレッドが実行されますが、状況に応じて、後者のような 2 次元でスレッドを指定する方が効率が良いことがあります。
-これについては後に続いて解説します。ひとまずスレッド数は 3 次元で指定されるという認識が必要です。
-
-最後に@<b>{グループ}とは、スレッドを実行する単位です。また、あるグループが実行するスレッドは@<b>{グループスレッド}と呼ばれます。
-例えば、あるグループが単位当たり、(4, 1, 1) スレッドを持つとします。このグループが 2 つあるとき、それぞれのグループが、(4, 1, 1) のスレッドを持ちます。
-
-グループもスレッドと同様に 3 次元で指定されます。例えば、(2, 1, 1) グループが、(4, 4, 1) スレッドで実行されるカーネルを実行するとき、
-グループ数は 2 * 1 * 1 = 2 です。この 2 つのグループは、それぞれ 4 * 4 * 1 = 16 スレッドを持つことになります。
-したがって、合計スレッド数は、2 * 16 = 32 となります。
+Handled by Compute Shaders before describing the specific implementation @<b>{kernel(Kernel)}、
+@<b>{thread(Thread)}、@<b>{Group(Group)} It is necessary to explain the concept of.
 
 
-== サンプル (1) : GPU で演算した結果を取得する
+@<b>{kernel} What is、GPU Refers to a single operation performed by
+Treated as a function in code (equivalent to the kernel in the sense of general system terminology).
+
+@<b>{thread}Is the unit that executes the kernel. One thread runs one kernel.
+Compute shaders allow the kernel to run concurrently in multiple threads simultaneously.
+Threads are specified in three dimensions (x, y, z).
+
+For example,(4, 1, 1) Nara 4 * 1 * 1 = 4 One thread runs at the same time.
+(2, 2, 1) Then2 * 2 * 1 = 4 One thread runs at the same time.
+The same four threads are executed, but in some cases it may be more efficient to specify threads in two dimensions like the latter.
+This will be explained later. For the time being, it is necessary to realize that the number of threads is specified in three dimensions.
+
+Finally@<b>{group}Is the unit of execution of a thread. Also, the thread that a group executes is@<b>{Group thread}Is called.
+For example, a group has(4, 1, 1) Suppose you have a thread. This group 2 When there are two groups,(4, 1, 1) Has a thread of.
+
+Groups, like threads, are specified in three dimensions. For example, when a (2, 1, 1) group runs a kernel that runs with (4, 4, 1) threads,
+The number of groups is 2 * 1 * 1 = 2. The two groups will each have 4 * 4 * 1 = 16 threads.
+Therefore, the total number of threads is 2 * 16 = 32.
 
 
-サンプル (1) 「SampleScene_Array」では、適当な計算をコンピュートシェーダで実行し、その結果を配列として取得する方法について扱います。
-サンプルには次のような操作が含まれます。
-
- * コンピュートシェーダを使って複数のデータを処理し、その結果を取得する。
- * コンピュートシェーダに複数の機能を実装し、使い分ける。
- * コンピュートシェーダ (GPU) にスクリプト (CPU) から値を渡す。
-
-サンプル (1) の実行結果は次の通りになります。デバッグ出力だけですから、ソースコードを読みながら動作を確認してください。
-
-//image[primerofcomputeshader03][サンプル (1) の実行結果][scale=1]
+== Sample (1): Get the result calculated by GPU
 
 
-=== コンピュートシェーダの実装
+Sample (1) "SampleScene_Array" deals with how to execute an appropriate calculation with a compute shader and get the result as an array.
+The sample includes the following operations:
+
+ * Use the compute shader to process multiple data and get the result.
+ * Implement multiple functions in the compute shader and use them properly.
+ * Pass values ​​from the script (CPU) to the compute shader (GPU).
+
+The execution result of sample (1) is as follows. Check the operation while reading the source code, since it is only the debug output.
+
+//image[primerofcomputeshader03][sample (1) Execution result of][scale=1]
 
 
-ここからサンプルを実例に解説を進めます。
-非常に短いので、コンピュートシェーダの実装については先に一通り目を通して頂くのが良いと思います。
-基本構成として、関数の定義、関数の実装、バッファがあり、必要に応じて変数があります。
+=== Compute shader implementation
+
+
+From here, we will proceed with the explanation using a sample as an example.
+It's very short, so it's a good idea to go through the Compute Shader implementation first.
+The basic configuration consists of function definitions, function implementations, buffers, and optionally variables.
 
 //emlist[SimpleComputeShader_Array.compute]{
 #pragma kernel KernelFunction_A
@@ -95,75 +93,75 @@ void KernelFunction_B(uint3 groupID : SV_GroupID,
 }
 //}
 
-特徴として、@<b>{numthreads} 属性と、@<b>{SV_GroupID} セマンティクスなどがありますが、
-これについては後述します。
+as a feature,@<b>{numthreads} Attributes,@<b>{SV_GroupID} There are semantics etc.,
+This will be discussed later.
 
 
-=== カーネルの定義
+=== Kernel definition
 
 
-先に解説した通り、正確な定義はさておき、@<b>{カーネルは GPU で実行される1つの処理を指し、コード上では 1 つの関数として扱われます。}
-カーネルは 1 つのコンピュートシェーダに複数実装することができます。
+As I explained earlier, aside from the exact definition,@<b>{The kernel is a piece of work performed on the GPU and is treated as a function in code.}
+Multiple kernels can be implemented in one compute shader.
 
-この例では、カーネルは @<code>{KernelFunction_A} ないし @<code>{KernelFunction_B} 関数がカーネルに相当します。
-また、カーネルとして扱う関数は @<code>{#pragma kernel} を使って定義します。
-これによってカーネルとそれ以外の関数と識別します。
+In this example, the kernel is @<code>{KernelFunction_A} No @<code>{KernelFunction_B} The function corresponds to the kernel.
+Also, the function treated as a kernel is @<code>{#pragma kernel} Use to define.
+This distinguishes it from the kernel and other functions.
 
-定義された複数のカーネルのうち、任意の 1 つを識別するために、固有のインデックスがカーネルに与えられます。
-インデックスは @<code>{#pragma kernel} で定義された順に、上から 0, 1 … と与えられます。
-
-
-=== バッファや変数の用意
+A unique index is given to the kernel to identify any one of the defined kernels.
+Index is @<code>{#pragma kernel} They are given as 0, 1 …from the top in the order defined by.
 
 
-コンピュートシェーダで実行した結果を保存する@<b>{バッファ領域}を作っておきます。
-サンプルの変数 @<code>{RWStructuredBuffer<int> intBuffer}} がこれに相当します。
-
-またスクリプト (CPU) 側から任意の値を与えたい場合には、一般的な CPU プログラミングと同じように変数を用意します。
-この例では変数 @<code>{intValue} がこれに相当し、スクリプトから値を渡します。
+=== Preparing buffers and variables
 
 
-=== numthreads による実行スレッド数の指定
+Create @<b>{buffer area} to save the result executed by Compute Shader.
+Sample variables @<code>{RWStructuredBuffer<int> intBuffer}} Is equivalent to this.
+
+Also script (CPU) If you want to give any value from the side、一Prepare variables as in general CPU programming.
+この例では変数 @<code>{intValue} Is equivalent to this, and passes the value from the script.
 
 
-@<b>{numthreads} 属性 (Attribute) は、カーネル (関数) を実行するスレッドの数を指定します。
-スレッド数の指定は、(x, y, z) で指定し、例えば (4, 1, 1) なら、 4 * 1 * 1 = 4 スレッドでカーネルを実行します。
-他に、(2, 2, 1) なら 2 * 2 * 1 = 4 スレッドでカーネルを実行します。
-共に 4 スレッドで実行されますが、この違いや使い分けについては後述します。
+=== numthreads The number of execution threads by
 
 
-=== カーネル (関数) の引数
+@<b>{numthreads} Attributes (Attribute) Is the kernel (function) Specifies the number of threads to execute.
+To specify the number of threads,(x, y, z) Specify with, for example (4, 1, 1) Will run the kernel with 4 * 1 * 1 = 4 threads.
+(2, 2, 1) Nara 2 * 2 * 1 = 4 Run the kernel in a thread.
+Both are executed with 4 threads, but the difference and usage will be described later.
 
 
-カーネルに設定できる引数には制約があり、一般的な CPU プログラミングと比較して自由度は極めて低いです。
+=== Kernel (function) arguments
 
-引数に続く値を@<code>{セマンティクス}と呼び、この例では @<code>{groupID : SV_GroupID} と @<code>{groupThreadID : SV_GroupThreadID} を設定しています。セマンティクスは引数がどのような値であるかを示すための物であり、他の名前に変更することができません。
 
-引数名 (変数名) は自由に定義することができますが、コンピュートシェーダを使うにあたって定義されるセマンティクスのいずれかを設定する必要があります。
-つまり、任意の型の引数を定義してカーネル内で参照する、といった実装はできず、
-カーネルで参照することができる引数は、定められた限定的なものから選択する、ということです。
+There are restrictions on the arguments that can be set in the kernel, and the degree of freedom is extremely low compared to general CPU programming.
 
-@<code>{SV_GroupID} は、カーネルを実行するスレッドが、どのグループで実行されているかを (x, y, z) で示します。
-@<code>{SV_GroupThreadID} は、カーネルを実行するスレッドが、グループ内の何番目のスレッドであるかを (x, y, z) で示します。
+The value following the argument is called @<code>{Semantics}, and in this example @<code>{groupID :SV_GroupID} and @<code>{groupThreadID :SV_GroupThreadID} are set. Semantics are just to show what kind of value the argument is, and cannot be changed to any other name.
 
-例えば (4, 4, 1) のグループで、(2, 2, 1) のスレッドを実行するとき、
-@<code>{SV_GroupID} は (0 ~ 3, 0 ~ 3, 0) の値を返します。
-@<code>{SV_GroupThreadID} は (0 ~ 1, 0 ~ 1, 0) の値を返します。
+The argument name (variable name) can be freely defined, but it is necessary to set one of the semantics defined when using the compute shader.
+In other words, it is not possible to implement it by defining an argument of any type and referencing it in the kernel.
+The argument that can be referred to in the kernel is to select from the defined limited ones.
 
-サンプルで設定されるセマンティクス以外にも @<code>{SV_~} から始まるセマンティクスがあり、利用することができますが、
-ここでは説明を割愛します。一通りコンピュートシェーダの動きが分かった後に目を通すほうが良いと思います。
+@<code>{SV_GroupID} Indicates in which group the thread executing the kernel is running (x, y, z).
+@<code>{SV_GroupThreadID} Is the (x, y, z) number of the thread that runs the kernel in the group.
+
+例えば (4, 4, 1) In a group of(2, 2, 1) When executing the thread of
+@<code>{SV_GroupID} Is (0 ~ 3, 0 ~ 3, 0) Returns the value of.
+@<code>{SV_GroupThreadID} Is (0 ~ 1, 0 ~ 1, 0) Returns the value of.
+
+In addition to the semantics set in the sample, there are other semantics starting from @<code>{SV_~}, which you can use,
+I will omit the explanation here. I think it's better to read it once you understand the behavior of the compute shader.
 
  * SV_GroupID - Microsoft Developer Network
  ** @<href>{https://msdn.microsoft.com/ja-jp/library/ee422449(v=vs.85).aspx} 
- ** 異なる SV~ セマンティクスとその値について確認することができます。
+ ** You can see the different SV~ semantics and their values.
 
 
-=== カーネル (関数) の処理内容
+=== Contents of kernel (function) processing
 
 
-サンプルでは、用意したバッファに、順にスレッド番号を代入していく処理を行っています。
-@<code>{groupThreadID} は、あるグループで実行されるスレッド番号が与えられます。
-このカーネルは (4, 1, 1) スレッドで実行されますから、@<code>{groupThreadID} は (0 ~ 3, 0, 0) が与えられます。
+In the sample, the thread number is sequentially assigned to the prepared buffer.
+@<code>{groupThreadID} Is given the thread number to run in a group.
+This kernel runs with (4, 1, 1) threads, so @<code>{groupThreadID} is given (0 ~ 3, 0, 0).
 
 //emlist[SimpleComputeShader_Array.compute]{
 [numthreads(4, 1, 1)]
@@ -174,22 +172,21 @@ void KernelFunction_A(uint3 groupID : SV_GroupID,
 }
 //}
 
-今回のサンプルはこのスレッドを、(1, 1, 1) のグループで実行します (後述するスクリプトから) 。
-すなわちグループを 1 つだけ実行し、そのグループには、4 * 1 * 1 のスレッドが含まれます。
-結果として@<code>{groupThreadID.x} には 0 ~ 3 の値が与えられることを確認してください。
+This sample runs this thread in a group of (1, 1, 1) (from the script below).
+That is, run only one group, which contains 4 * 1 * 1 threads.
+Make sure @<code>{groupThreadID.x} is given a value between 0 and 3 as a result.
 
-※この例では @<code>{groupID} を利用していませんが、スレッドと同様に、3次元で指定されるグループ数が与えられます。
-代入してみるなどして、コンピュートシェーダの動きを確認するために使ってみてください。
+*In this example, @<code>{groupID} is not used, but like threads, the number of groups specified in 3 dimensions is given.
+Please try using it to check the behavior of the compute shader, such as by substituting it.
+
+=== Run Compute Shader from script
 
 
-=== スクリプトからコンピュートシェーダを実行する
+Execute the implemented compute shader from the script. The items required on the script side are as follows.
 
-
-実装したコンピュートシェーダをスクリプトから実行します。スクリプト側で必要になるものは概ね次の通りです。
-
- * コンピュートシェーダへの参照 | @<code>{comuteShader}
- * 実行するカーネルのインデックス | @<code>{kernelIndex_KernelFunction_A, B}
- * コンピュートシェーダの実行結果を保存するバッファ | @<code>{intComputeBuffer}
+ * Reference to Compute Shader | @<code>{comuteShader}
+ * Index of kernel to execute | @<code>{kernelIndex_KernelFunction_A, B}
+ * A buffer to save the execution result of compute shader | @<code>{intComputeBuffer}
 
 //emlist[SimpleComputeShader_Array.cs]{
 public ComputeShader computeShader;
@@ -214,12 +211,12 @@ void Start()
 //}
 
 
-=== 実行するカーネルのインデックスを取得する
+=== Get the index of the kernel to execute
 
 
-あるカーネルを実行するためには、そのカーネルを指定するためのインデックス情報が必要です。
-インデックスは @<code>{#pragma kernel} で定義された順に、上から 0, 1 … と与えられますが、
-スクリプト側から @<code>{FindKernel} 関数を使うのが良いでしょう。
+In order to execute a certain kernel, index information for specifying the kernel is required.
+Index is @<code>{#pragma kernel} It is given as 0, 1… from the top in the order defined by
+From the script side @<code>{FindKernel} It's better to use a function.
 
 //emlist[SimpleComputeShader_Array.cs]{
 this.kernelIndex_KernelFunction_A
@@ -230,11 +227,11 @@ this.kernelIndex_KernelFunction_B
 //}
 
 
-=== 演算結果を保存するバッファの生成する
+=== Create a buffer to save the calculation result
 
 
-コンピュートシェーダ (GPU) による演算結果を CPU 側に保存するためのバッファ領域を用意します。
-Unity　では @<code>{ComputeBuffer} として定義されています。
+Prepare the buffer area to save the calculation result by Compute Shader (GPU) on the CPU side.
+Unity Then @<code>{ComputeBuffer} Is defined as
 
 //emlist[SimpleComputeShader_Array.cs]{
 this.intComputeBuffer = new ComputeBuffer(4, sizeof(int));
@@ -242,37 +239,35 @@ this.computeShader.SetBuffer
     (this.kernelIndex_KernelFunction_A, "intBuffer", this.intComputeBuffer);
 //}
 
-@<code>{ComputeBuffer} を (1) 保存する領域のサイズ、
-(2) 保存するデータの単位当たりのサイズを指定して初期化します。
-ここでは int 型のサイズ 4 つ分の領域が用意されています。
-これはコンピュートシェーダの実行結果が int[4] として保存されるためです。
-必要に応じてサイズを変更します。
+@<code>{ComputeBuffer} To (1) The size of the area to save,
+(2) Specify the size per unit of the data to be saved and initialize it.
+There are 4 areas of size int provided here.
+This is because the compute shader execution result is saved as int[4].
+Resize as needed.
 
-次いで、コンピュートシェーダに実装された、(1) どのカーネルが実行するときに、
-(2) どの GPU 上のバッファを使うのかを指定し、(3) CPU 上のどのバッファに相当するのか、を指定します。
+Then, when (1) which kernel implemented in the compute shader executes,
+(2) Specify which GPU's buffer to use, and (3) specify which CPU's buffer.
+In this example,(1) @<code>{KernelFunction_A} Referenced when is executed,
+(2) @<code>{intBuffer} The buffer area is (3) @<code>{intComputeBuffer} Equivalent to.
 
-この例では、(1) @<code>{KernelFunction_A} が実行されるときに参照される、
-(2) @<code>{intBuffer} なるバッファ領域は、(3) @<code>{intComputeBuffer} に相当する、と指定されます。
 
-
-=== スクリプトからコンピュートシェーダに値を渡す
+=== Pass value from script to compute shader
 
 
 //emlist[SimpleComputeShader_Array.cs]{
 this.computeShader.SetInt("intValue", 1);
 //}
 
-処理したい内容によってはスクリプト (CPU) 側からコンピュートシェーダ (GPU) 側に値を渡し、参照したい場合があると思います。
-ほとんどの型の値は @<code>{ComputeShader.Set~} を使って、コンピュートシェーダ内にある変数に設定することができます。
-このとき、引数に設定する引数の変数名と、コンピュートシェーダ内に定義された変数名は一致する必要があります。
-この例では @<code>{intValue} に 1 を渡しています。
+Depending on what you want to process, you may want to pass a value from the script (CPU) side to the compute shader (GPU) side for reference.
+Values ​​of most types can be set to variables inside the compute shader using @<code>{ComputeShader.Set~}.
+At this time, the variable name of the argument set in the argument and the variable name defined in the compute shader must match.
+In this example we are passing 1 for @<code>{intValue}.
+
+=== Run Compute Shader
 
 
-=== コンピュートシェーダの実行
-
-
-コンピュートシェーダに実装(定義)されたカーネルは、@<code>{ComputeShader.Dispatch} メソッドで実行します。
-指定したインデックスのカーネルを、指定したグループ数で実行します。グループ数は X * Y * Z で指定します。このサンプルでは 1 * 1 * 1 = 1 グループです。
+The kernel implemented (defined) in the compute shader executes with the @<code>{ComputeShader.Dispatch} method.
+Runs the kernel with the specified index in the specified number of groups. The number of groups is specified by X * Y * Z. In this sample, 1 * 1 * 1 = 1 group.
 
 //emlist[SimpleComputeShader_Array.cs]{
 this.computeShader.Dispatch
@@ -288,15 +283,15 @@ for (int i = 0; i < 4; i++)
 }
 //}
 
-コンピュートシェーダ (カーネル) の実行結果は、@<code>{ComputeBuffer.GetData} で取得します。
+The execution result of the compute shader (kernel) is obtained with @<code>{ComputeBuffer.GetData}.
 
 
-=== 実行結果の確認 (A)
+=== Confirmation of execution result (A)
 
 
-あらためてコンピュートシェーダ側の実装を確認します。
-このサンプルでは次のカーネルを 1 * 1 * 1 = 1グループで実行しています。
-スレッドは、4 * 1 * 1 = 4 スレッドです。また @<code>{intValue} にはスクリプトから 1 を与えています。
+Check the implementation on the compute shader side again.
+This sample runs the following kernels in a 1 * 1 * 1 = 1 group.
+The threads are 4 * 1 * 1 = 4 threads. Also, 1 is given to @<code>{intValue} from the script.
 
 //emlist[SimpleComputeShader_Array.compute]{
 [numthreads(4, 1, 1)]
@@ -314,12 +309,11 @@ void KernelFunction_A(uint3 groupID : SV_GroupID,
 つまり、@<code>{intBuffer[0] = 0}　～ @<code>{intBuffer[3] = 3} までが並列して実行されることになります。
 
 
-=== 異なるカーネル (B) を実行する
+=== Run a different kernel (B)
 
-
-1 つのコンピュートシェーダに実装した異なるカーネルを実行するときは、別のカーネルのインデックスを指定します。
-この例では、@<code>{KernelFunction_A} を実行した後に @<code>{KernelFunction_B} を実行します。
-さらに @<code>{KernelFunction_A} で利用したバッファ領域を、@<code>{KernelFunction_B} でも使っています。
+When running different kernels implemented in one compute shader, specify the index of another kernel.
+This example executes @<code>{KernelFunction_A} and then @<code>{KernelFunction_B}.
+Furthermore, the buffer area used by @<code>{KernelFunction_A} is also used by @<code>{KernelFunction_B}.
 
 //emlist[SimpleComputeShader_Array.cs]{
 this.computeShader.SetBuffer
@@ -336,11 +330,11 @@ for (int i = 0; i < 4; i++)
 //}
 
 
-=== 実行結果の確認 (B)
+=== Confirmation of execution result (B)
 
 
-@<code>{KernelFunction_B} は次のようなコードを実行します。
-このとき @<code>{intBuffer} は @<code>{KernelFunction_A} で使ったものを引き続き指定している点に注意してください。
+@<code>{KernelFunction_B} Executes code similar to the following:
+このとき @<code>{intBuffer} は @<code>{KernelFunction_A} Note that we still specify the one used in.
 
 //emlist[SimpleComputeShader_Array.compute]{
 RWStructuredBuffer<int> intBuffer;
@@ -353,48 +347,48 @@ void KernelFunction_B
 }
 //}
 
-このサンプルでは、@<code>{KernelFunction_A} によって @<code>{intBuffer} に 0 ~ 3 が順に与えられています。
-したがって @<code>{KernelFunction_B} を実行した後は、値が 1 ~ 4 になることを確認します。
+In this sample, @<code>{KernelFunction_A} By @<code>{intBuffer} 0 to 3 are given in order.
+So after executing @<code>{KernelFunction_B}, make sure the value is between 1 and 4.
 
 
-=== バッファの破棄
+=== Discard buffer
 
 
-利用し終えた ComputeBuffer は、明示的に破棄する必要があります。
+You need to explicitly destroy the ComputeBuffer when you are done using it.
 
 //emlist[SimpleComputeShader_Array.cs]{
 this.intComputeBuffer.Release();
 //}
 
 
-=== サンプル (1) で解決していない問題
+=== Problems not resolved in sample (1)
 
 
-多次元のスレッドまたはグループを指定する意図について、このサンプルでは解説していません。
-例えば、 (4, 1, 1) スレッドと、(2, 2, 1) スレッドは、どちらも 4 スレッド実行されますが、
-この 2 つは使い分ける意味があります。これについては後に続くサンプル (2) で解説します。
+The intention of specifying multidimensional threads or groups is not covered in this sample.
+For example, a (4, 1, 1) thread and a (2, 2, 1) thread both run 4 threads,
+These two have the meaning to use properly. This is demonstrated in the sample (2) that follows.
 
 
-== サンプル (2) : GPU の演算結果をテクスチャにする
+== Sample (2): Make GPU operation result texture
 
 
-サンプル (2) 「SampleScene_Texture」では、コンピュートシェーダの算出結果をテクスチャにして取得します。
-サンプルには次のような操作が含まれます。
+Sample (2) In "SampleScene_Texture", the calculation result of the compute shader is obtained as a texture.
+The sample includes the following operations:
 
- * コンピュートシェーダを使って、テクスチャに情報を書き込む。
- * 多次元 (2次元) のスレッドを有効に活用する。
+ * Write information to texture using compute shader.
+ * Effectively utilize multi-dimensional (two-dimensional) threads.
 
-サンプル (2) の実行結果は次の通りになります。横方向と縦方向にグラデーションするテクスチャを生成します。
+The execution result of sample (2) is as follows. Generates a horizontal and vertical gradient texture.
 
-//image[primerofcomputeshader04][サンプル (2) の実行結果][scale=1]
-
-
-=== カーネルの実装
+//image[primerofcomputeshader04][Result of sample (2)][scale=1]
 
 
-全体の実装についてはサンプルを参照してください。このサンプルでは概ね次のようなコードをコンピュートシェーダで実行します。
-カーネルが多次元スレッドで実行される点に注目してください。(8, 8, 1) なので、1 グループあたり、8 * 8 * 1 = 64 スレッドで実行されます。
-また演算結果の保存先が @<code>{RWTexture2D<float4>} であることも大きな変更点です。
+=== Kernel implementation
+
+
+See sample for full implementation. In this sample, the following code is executed by the compute shader.
+Notice that the kernel runs in a multidimensional thread. Since it is (8, 8, 1), there are 8 * 8 * 1 = 64 threads per group.
+Another big change is that the calculation result is saved in @<code>{RWTexture2D<float4>}.
 
 //emlist[SimpleComputeShader_Texture.compute]{
 RWTexture2D<float4> textureBuffer;
@@ -414,11 +408,11 @@ void KernelFunction_A(uint3 dispatchThreadID : SV_DispatchThreadID)
 //}
 
 
-=== 特殊な引数 SV_DispatchThreadID
+=== Special arguments SV_DispatchThreadID
 
 
-サンプル (1) では @<code>{SV_DispatchThradID} セマンティクスは使いませんでした。
-少々複雑ですが、@<b>{「あるカーネルを実行するスレッドが、すべてのスレッドの中のどこに位置するか (x,y,z) 」}を示しています。
+sample (1) では @<code>{SV_DispatchThradID} I didn't use semantics.
+It's a little complicated,@<b>{「あるカーネルを実行するスレッドが、すべてのスレッドの中のどこに位置するか (x,y,z) 」}Is shown.
 
 @<code>{SV_DispathThreadID} は、@<code>{SV_Group_ID * numthreads + SV_GroupThreadID} で算出される値です。
 @<code>{SV_Group_ID} はあるグループを (x, y, z) で示し、@<code>{SV_GroupThreadID} は、あるグループに含まれるスレッドを (x, y, z) で示します。
