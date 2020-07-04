@@ -40,16 +40,12 @@ The shape of the model consists of triangles arranged in 3D space, where one tri
 The official Unity document explains how to manage the vertex and triangle data of the model in the Mesh class as follows.
 
 //quote{
-In the Mesh class, all vertices are stored in one array, and each triangle is specified by three integers that are indices into the vertex array. Triangles are also collected as an array of integers. The integers are grouped by every third from the beginning of the array, so elements 0, 1, and 2 define the first triangle, the second triangle is 3, 4, and so on.
+A mesh consists of triangles arranged in 3D space to create the impression of a solid object. A triangle is defined by its three corner points or vertices. In the Mesh class, the vertices are all stored in a single array and each triangle is specified using three integers that correspond to indices of the vertex array. The triangles are also collected together into a single array of integers; the integers are taken in groups of three from the start of this array, so elements 0, 1 and 2 define the first triangle, 3, 4 and 5 define the second, and so on. Any given vertex can be reused in as many triangles as desired but there are reasons why you may not want to do this, as explained below.
 @<fn>{mesh}
 
 //}
 
-//footnote[mesh][https://docs.unity3d.com/jp/540/Manual/AnatomyofaMesh.html]
-
-== LW:Note - 
-this is garbled, rewrite: a descrption of how the mesh class works, how it is made up of triangles, how the data is stored and how it uses uvs to be textured.
-== End Note
+//footnote[mesh][https://docs.unity3d.com/Manual/AnatomyofaMesh.html]
 
 The model has uv coordinates that represent the coordinates on the texture that are necessary for texture mapping so as to correspond to each vertex, and a normal vector (also called normal) that is needed to calculate the influence of the light source during lighting. Will be included.
 
@@ -82,53 +78,53 @@ var mesh = new Mesh();
 //}
 
 
-次にQuadの四隅に位置する4つの頂点を表すVector3配列を生成します。
-また、uv座標と法線のデータも4つの頂点それぞれに対応するように用意します。
+Next, create a Vector3 array that represents the four vertices at the four corners of the Quad.
+Also, prepare uv coordinate and normal data so that they correspond to each of the four vertices.
 
 
 //emlist[][cs]{
-// Quadの横幅と縦幅がそれぞれsizeの長さになるように半分の長さを求める
+// Quad: Find half the length so that the width and height of are each size
 var hsize = size * 0.5f; 
 
-// Quadの頂点データ
+// Quad: Vertex data of
 var vertices = new Vector3[] {
-    new Vector3(-hsize,  hsize, 0f), // 1つ目の頂点 Quadの左上の位置
-    new Vector3( hsize,  hsize, 0f), // 2つ目の頂点 Quadの右上の位置
-    new Vector3( hsize, -hsize, 0f), // 3つ目の頂点 Quadの右下の位置
-    new Vector3(-hsize, -hsize, 0f)  // 4つ目の頂点 Quadの左下の位置
+    new Vector3(-hsize,  hsize, 0f), // The top left position of the first vertex Quad
+    new Vector3( hsize,  hsize, 0f), // Upper right position of second vertex Quad
+    new Vector3( hsize, -hsize, 0f), // Lower right position of third vertex Quad
+    new Vector3(-hsize, -hsize, 0f)  // Lower left position of fourth vertex Quad
 };
 
-// Quadのuv座標データ
+// Quad uv coordinate data
 var uv = new Vector2[] {
-    new Vector2(0f, 0f), // 1つ目の頂点のuv座標
-    new Vector2(1f, 0f), // 2つ目の頂点のuv座標
-    new Vector2(1f, 1f), // 3つ目の頂点のuv座標
-    new Vector2(0f, 1f)  // 4つ目の頂点のuv座標
+    new Vector2(0f, 0f), // Uv coordinate of the 1st vertex
+    new Vector2(1f, 0f), // Uv coordinate of the 2nd vertex
+    new Vector2(1f, 1f), // Uv coordinate of the 3rd vertex
+    new Vector2(0f, 1f)  // Uv coordinate of the 4th vertex
 };
 
-// Quadの法線データ
+// Quad normal data
 var normals = new Vector3[] {
-    new Vector3(0f, 0f, -1f), // 1つ目の頂点の法線
-    new Vector3(0f, 0f, -1f), // 2つ目の頂点の法線
-    new Vector3(0f, 0f, -1f), // 3つ目の頂点の法線
-    new Vector3(0f, 0f, -1f)  // 4つ目の頂点の法線
+    new Vector3(0f, 0f, -1f), // 1st vertex normal
+    new Vector3(0f, 0f, -1f), // 2nd vertex normal
+    new Vector3(0f, 0f, -1f), // 3rd vertex normal
+    new Vector3(0f, 0f, -1f)  // 4th vertex normal
 };
 //}
 
 
-次に、モデルの面を表す三角形データを生成します。三角形データは整数配列によって指定され、それぞれの整数は頂点配列のindexに対応しています。
+Next, generate triangle data representing the faces of the model. Triangle data is specified by an integer array, and each integer corresponds to the index of the vertex array.
 
 
 //emlist[][cs]{
-// Quadの面データ 頂点のindexを3つ並べて1つの面(三角形)として認識する
+// Quad face data, categorize three face vertices as one triangle face
 var triangles = new int[] {
-    0, 1, 2, // 1つ目の三角形
-    2, 3, 0  // 2つ目の三角形
+    0, 1, 2, // First triangle
+    2, 3, 0  // Second triangle
 };
 //}
 
 
-最後に生成したデータをMeshのインスタンスに設定していきます。
+Set the last generated data to the Mesh instance.
 
 
 //emlist[][cs]{
@@ -137,7 +133,7 @@ mesh.uv = uv;
 mesh.normals = normals;
 mesh.triangles = triangles;
 
-// Meshが占める境界領域を計算する（cullingに必要）
+// Calculate the boundary area occupied by Mesh (required for culling)
 mesh.RecalculateBounds();
 
 return mesh;
@@ -145,55 +141,57 @@ return mesh;
 
 === ProceduralModelingBase
 
-本章で利用するサンプルコードでは、ProceduralModelingBaseという基底クラスを利用しています。
-このクラスの継承クラスでは、モデルのパラメータ（例えば、Quadでは横幅と縦幅を表すsize）を変更するたびに新たなMeshインスタンスを生成し、MeshFilterに適用することで、変更結果をすぐさま確認することができます。（Editorスクリプトを利用してこの機能を実現しています。ProceduralModelingEditor.cs）
+The sample code used in this chapter uses a base class called ProceduralModelingBase.
+In the inherited class of this class, a new Mesh instance is created each time the model parameter (for example, the size representing the width and height in Quad) is changed, and it is applied to the MeshFilter, so that the change result can be immediately confirmed. I can. (This function is realized by using Editor script. ProceduralModelingEditor.cs)
 
-また、ProceduralModelingMaterialというenum型のパラメータを変更することで、モデルのUV座標や法線方向を可視化することができます。
+In addition, by changing the enum type parameter called ProceduralModelingMaterial, you can visualize the UV coordinates and normal direction of the model.
 
-//image[ProceduralModeling_materials][左から、ProceduralModelingMaterial.Standard、ProceduralModelingMaterial.UV、ProceduralModelingMaterial.Normalが適用されたモデル]{
+//image[ProceduralModeling_materials][From the left, ProceduralModelingMaterial.Standard、ProceduralModelingMaterial.UV、ProceduralModelingMaterial.Normal Applied model]{
 //}
 
-== プリミティブな形状
+== Primitive shape
 
 
-モデルの構造を理解できたところで、いくつかプリミティブな形状を作っていきましょう。
+Now that you understand the model structure, let's create some primitive shapes.
 
 
 === Plane
 
 
-PlaneはQuadをグリッド上に並べたような形をしています。
+Plane is like quads arranged on a grid.
 
-//image[ProceduralModeling_plane][Planeモデル]{
+//image[ProceduralModeling_plane][Plane model]{
 //}
 
-グリッドの行数と列数を決め、それぞれのグリッドの交点に頂点を配置し、グリッドの各マスを埋めるようにQuadを構築し、それらをまとめることで1つのPlaneモデルを生成します。
+Decide the number of rows and columns in the grid, place vertices at the intersections of the grids, construct a Quad so as to fill each grid grid, and combine them to generate one Plane model.
 
-サンプルプログラムPlane.csでは、Planeの縦に並べる頂点の数heightSegments、横に並べる頂点の数widthSegmentsと、縦の長さheight、横の長さwidthのパラメータを用意しています。
-それぞれのパラメータは次の図のようにPlaneの形状に影響します。
+In the sample program Plane.cs, the number of vertical vertices of the Plane heightSegments, the number of vertical vertices widthSegments, and the parameters of the vertical length height and the horizontal length width are prepared.
+Each parameter affects the shape of the plane as shown in the figure below.
 
-//image[ProceduralModeling_plane_parameters][Planeパラメータ]{
+//image[ProceduralModeling_plane_parameters][Plane parameter]{
 //}
 
-==== サンプルプログラム Plane.cs
+==== Sample program Plane.cs
 
-まずはグリッドの交点に配置する頂点データを生成していきます。
+First, create the vertex data to be placed at the intersection points of the grid.
 
 //emlist[][cs]{
 var vertices = new List<Vector3>();
 var uv = new List<Vector2>();
 var normals = new List<Vector3>();
 
-// 頂点のグリッド上での位置の割合(0.0 ~ 1.0)を算出するための行列数の逆数
+// The reciprocal of the number of matrices to calculate the ratio of vertices 
+// on the grid (0.0 to 1.0) 
+// LW:TODO (reciprocal?)
 var winv = 1f / (widthSegments - 1);
 var hinv = 1f / (heightSegments - 1);
 
 for(int y = 0; y < heightSegments; y++) {
-    // 行の位置の割合(0.0 ~ 1.0)
+    // Percentage of row positions (0.0 to 1.0)
     var ry = y * hinv;
 
     for(int x = 0; x < widthSegments; x++) {
-        // 列の位置の割合(0.0 ~ 1.0)
+        // Column position percentage (0.0 to 1.0)
         var rx = x * winv;
 
         vertices.Add(new Vector3(
@@ -207,7 +205,7 @@ for(int y = 0; y < heightSegments; y++) {
 }
 //}
 
-次に三角形データですが、各三角形に設定する頂点indexは行と列を辿るループの中で、下記のように参照します。
+Next, regarding triangle data, the vertex index set for each triangle is referenced as follows in a loop that follows rows and columns.
 
 //emlist[][cs]{
 var triangles = new List<int>();
@@ -233,32 +231,32 @@ for(int y = 0; y < heightSegments - 1; y++) {
 
 ==== ParametricPlaneBase
 
-Planeの各頂点の高さ（y座標）の値は0に設定していましたが、この高さを操作することで、単なる水平な面だけではなく、凸凹した地形や小高い山のような形を得ることができます。
+The value of the height (y coordinate) of each vertex of Plane was set to 0, but by operating this height, not only a horizontal surface but also a shape such as uneven terrain and small mountains Can get
 
-ParametricPlaneBaseクラスはPlaneクラスを継承しており、Meshを生成するBuild関数をoverrideしています。
-まずは元のPlaneモデルを生成し、各頂点のuv座標をインプットにして高さを求めるDepth(float u, float v)関数を、全ての頂点について呼び出し、高さを設定し直すことで柔軟に形を変形します。
+The ParametricPlaneBase class inherits the Plane class and overrides the Build function that creates the Mesh.
+First, generate the original Plane model, call the Depth(float u, float v) function that finds the height with the uv coordinates of each vertex as input, and set the height flexibly by resetting the height. Transforms.
 
-このParametricPlaneBaseクラスを継承したクラスを実装することで、頂点によって高さが変化するPlaneモデルを生成できます。
+By implementing a class that inherits this ParametricPlaneBase class, you can generate a Plane model whose height changes depending on the vertices.
 
-==== サンプルプログラム ParametricPlaneBase.cs
+==== Sample Program ParametricPlaneBase.cs
 
 //emlist[][cs]{
 protected override Mesh Build() {
-    // 元のPlaneモデルを生成
+    // Generate the original Plane model
     var mesh = base.Build();
 
-    // Planeモデルが持つ頂点の高さを再設定する
+    // Reset the height of the vertices of the Plane model
     var vertices = mesh.vertices;
 
-    // 頂点のグリッド上での位置の割合(0.0 ~ 1.0)を算出するための行列数の逆数
+    // The reciprocal of the number of matrices to calculate the ratio of vertices on the grid (0.0 to 1.0)
     var winv = 1f / (widthSegments - 1);
     var hinv = 1f / (heightSegments - 1);
 
     for(int y = 0; y < heightSegments; y++) {
-        // 行の位置の割合(0.0 ~ 1.0)
+        // Percentage of row position (0.0 ~ 1.0)
         var ry = y * hinv;
         for(int x = 0; x < widthSegments; x++) {
-            // 列の位置の割合(0.0 ~ 1.0)
+            // Percentage of column positions (0.0-1.0)
             var rx = x * winv;
 
             int index = y * widthSegments + x;
@@ -266,11 +264,11 @@ protected override Mesh Build() {
         }
     }
 
-    // 頂点位置の再設定
+    // reset the vertex position
     mesh.vertices = vertices;
     mesh.RecalculateBounds();
 
-    // 法線方向を自動算出
+    // Automatically calculate the normal direction
     mesh.RecalculateNormals();
 
     return mesh;
@@ -278,16 +276,16 @@ protected override Mesh Build() {
 //}
 
 
-サンプルシーンParametricPlane.sceneでは、このParametricPlaneBaseを継承したクラス（MountainPlane、TerrainPlaneクラス）を利用したGameObjectが配置してあります。
-それぞれのパラメータを変えながら、形が変化していく様子を確認してみてください。
+In the sample scene ParametricPlane.scene, the GameObject that uses the class (MountainPlane, TerrainPlane class) that inherits this ParametricPlaneBase is located.
+Try changing each parameter and see how the shape changes.
 
-//image[ProceduralModeling_parametric_planes][ParametricPlane.scene　左がMountainPlaneクラス、右がTerrainPlaneクラスによって生成されたモデル]{
+//image[ProceduralModeling_parametric_planes][ParametricPlane.scene　Model generated by MountainPlane class on the left and TerrainPlane class on the right]{
 //}
 
 === Cylinder
 
 
-Cylinderは円筒型のモデルで、次の図のような形をしています。
+Cylinder is a cylindrical model with the shape shown in the following figure.
 
 
 
@@ -297,33 +295,33 @@ Cylinderは円筒型のモデルで、次の図のような形をしています
 
 
 
-円筒型の円のなめらかさはsegments、縦の長さと太さはそれぞれheightとradiusパラメータで制御することができます。
-上図の例のように、segmentsに7を指定するとCylinderは正7角形を縦に引き伸ばしたような形になり、segmentsの数値を大きくするほど円形に近づいていきます。
+The smoothness of a cylindrical circle can be controlled by segments, and the vertical length and thickness can be controlled by the height and radius parameters, respectively.
+As shown in the example in the above figure, when 7 is specified for segments, Cylinder becomes a shape in which a regular heptagon is stretched vertically, and it becomes closer to a circle as the value of segments is increased.
 
 
-==== 円周に沿って均等に並ぶ頂点
+==== vertices evenly arranged along the circumference
 
 
-Cylinderの頂点は、筒の端に位置する円の周りに沿って均等に並べる必要があります。
-
-
-
-円周に沿って均等に並ぶ頂点を配置するには、三角関数（Mathf.Sin, Mathf.Cos）を利用します。
-ここでは三角関数の詳細については割愛しますが、これらの関数を利用すると角度を元に円周上の位置を得ることができます。
+The Cylinder vertices should be evenly spaced around the circle at the end of the tube.
 
 
 
-//image[ProceduralModeling_cylinder_trigonometry][三角関数から円周上の点の位置を得る]{
+Use trigonometric functions (Mathf.Sin, Mathf.Cos) to place the vertices evenly distributed along the circumference.
+I will omit the details of trigonometric functions here, but by using these functions, the position on the circumference can be obtained based on the angle.
+
+
+
+//image[ProceduralModeling_cylinder_trigonometry][Get the position of a point on the circumference from a trigonometric function]{
 //}
 
 
 
 
-この図のように角度θ(シータ)から半径radiusの円上に位置する点は、(x, y) = (Mathf.Cos(θ) * radius, Mathf.Sin(θ) * radius)で取得することができます。
+As shown in this figure, the points located on the circle with radius radius from the angle θ (theta) are obtained by (x, y) = (Mathf.Cos(θ) * radius, Mathf.Sin(θ) * radius) can do.
 
 
 
-これを元に、半径radiusの円周上に均等に並べられたsegments個の頂点位置を得るには以下のような処理を行います。
+Based on this, the following process is performed to obtain the positions of segments vertices evenly arranged on the circumference of radius radius.
 
 
 //emlist[][cs]{
@@ -331,30 +329,30 @@ for (int i = 0; i < segments; i++) {
     // 0.0 ~ 1.0
     float ratio = (float)i / (segments - 1);
 
-    // [0.0 ~ 1.0]を[0.0 ~ 2π]に変換
+    // [0.0 ~ 1.0]To[0.0 ~ 2π]Conversion to radians
     float rad = ratio * PI2;
 
-    // 円周上の位置を得る
+    // Get the position on the circumference
     float cos = Mathf.Cos(rad), sin = Mathf.Sin(rad);
     float x = cos * radius, y = sin * radius;
 }
 //}
 
 
-Cylinderのモデリングでは、円筒の端に位置する円周に沿って均等に頂点を配置し、それらの頂点をつなぎ合わせて側面を形作ります。
-側面の1つ1つはQuadを構築するのと同じように、上端と下端から対応する頂点を2つずつ取り出して三角形を向かい合わせて配置し、1つの側面、つまり四角形を構築します。Cylinderの側面は、Quadが円形に沿って配置されているものだとイメージできます。
+In Cylinder modeling, vertices are evenly distributed along the circumference of the cylinder at the ends and the vertices are joined together to form the sides.
+Just like building a Quad on each side, we take two corresponding vertices from the top and bottom and place the triangles face-to-face to build one side, a rectangle. The side of Cylinder can be imagined as Quads arranged in a circle.
 
 
 
-//image[ProceduralModeling_cylinder_sides][Cylinderの側面のモデリング　黒丸は端に位置する円周に沿って均等に配置された頂点　頂点内のa〜dはCylinder.csプログラム内で三角形を構築する際に頂点に割り振られるindex変数]{
+//image[ProceduralModeling_cylinder_sides][Modeling the side of Cylinder Black circles are vertices that are evenly arranged along the circumference of the edge. a to d inside the vertices are index variables that are assigned to the vertices when constructing triangles in the Cylinder.cs program.]{
 //}
 
 
 
-==== サンプルプログラム Cylinder.cs
+==== Sample program Cylinder.cs
 
 
-まずは側面を構築していきますが、Cylinderクラスでは上端と下端に位置する円周に並べられた頂点のデータを生成するための関数GenerateCapを用意しています。
+First of all, we will build the side surface, but in the Cylinder class, we have a function GenerateCap for generating data of vertices arranged on the circumference located at the top and bottom.
 
 
 //emlist[][cs]{
@@ -363,17 +361,17 @@ var normals = new List<Vector3>();
 var uvs = new List<Vector2>();
 var triangles = new List<int>();
 
-// 上端の高さと、下端の高さ
+// Top height and bottom height
 float top = height * 0.5f, bottom = -height * 0.5f;
 
-// 側面を構成する頂点データを生成
+// Generates vertex data that constitutes the side surface
 GenerateCap(segments + 1, top, bottom, radius, vertices, uvs, normals, true);
 
-// 側面の三角形を構築する際、円上の頂点を参照するために、
-// indexが円を一周するための除数
+// To refer to the vertices on the circle when building the side triangle,
+// index is the divisor by which the circle goes around
 var len = (segments + 1) * 2;
 
-// 上端と下端をつなぎ合わせて側面を構築
+// Build a side by joining the top and bottom edges
 for (int i = 0; i < segments + 1; i++) {
     int idx = i * 2;
     int a = idx, b = idx + 1, c = (idx + 2) % len, d = (idx + 3) % len;
@@ -388,7 +386,7 @@ for (int i = 0; i < segments + 1; i++) {
 //}
 
 
-GenerateCap関数では、List型で渡された変数に頂点や法線データを設定します。
+Generate CapIn the function, set the vertex and normal data to the variables passed in List type.
 
 
 //emlist[][cs]{
@@ -409,64 +407,63 @@ void GenerateCap(
         // 0.0 ~ 2π
         float rad = ratio * PI2;
 
-        // 円周に沿って上端と下端に均等に頂点を配置する
+        // Place vertices evenly along the circumference at the top and bottom
         float cos = Mathf.Cos(rad), sin = Mathf.Sin(rad);
         float x = cos * radius, z = sin * radius;
         Vector3 tp = new Vector3(x, top, z), bp = new Vector3(x, bottom, z);
 
-        // 上端
+        // Upper end
         vertices.Add(tp); 
         uvs.Add(new Vector2(ratio, 1f));
 
-        // 下端
+        // lower end
         vertices.Add(bp); 
         uvs.Add(new Vector2(ratio, 0f));
 
         if(side) {
-            // 側面の外側を向く法線
+            // Normals that face the outside of the side
             var normal = new Vector3(cos, 0f, sin);
             normals.Add(normal);
             normals.Add(normal);
         } else {
-            normals.Add(new Vector3(0f, 1f, 0f)); // 蓋の上を向く法線
-            normals.Add(new Vector3(0f, -1f, 0f)); // 蓋の下を向く法線
+            normals.Add(new Vector3(0f, 1f, 0f)); // Normal facing up the lid
+            normals.Add(new Vector3(0f, -1f, 0f)); // Normal facing down the lid
         }
     }
 }
 //}
 
 
-Cylinderクラスでは、上端と下端を閉じたモデルにするかどうかをopenEndedフラグで設定することができます。上端と下端を閉じる場合は、円形の「蓋」を形作り、端に栓をします。
+In Cylinder class, you can set with openEnded flag whether to make the model with the top and bottom closed. If you want to close the top and bottom, shape a circular "lid" and plug the ends.
 
 
 
-蓋の面を構成する頂点は、側面を構成している頂点を利用せずに、側面と同じ位置に別途新しく頂点を生成します。これは、側面と蓋の部分とで法線を分け、自然なライティングを施すためです。（側面の頂点データを構築する場合はGenerateCapの引数のside変数にtrueを、蓋を構築する場合はfalseを指定し、適切な法線方向が設定されるようにしています。）
+The vertices that make up the surface of the lid do not use the vertices that make up the sides, but a new vertex is created at the same position as the sides. This is to separate the normals between the sides and the lid to give natural lighting. (When constructing the side vertex data, true is set to the side variable of the argument of GenerateCap, false is specified when constructing the lid, and the appropriate normal direction is set.)
 
 
 
-もし、側面と蓋の部分で同じ頂点を共有してしまうと、側面と蓋面で同じ法線を参照することになってしまうので、ライティングが不自然になってしまいます。
+If the side and the lid share the same vertex, the side and lid will refer to the same normal, which makes the lighting unnatural.
 
 
-
-//image[ProceduralModeling_cylinder_lighting][Cylinderの側面と蓋の頂点を共有した場合（左:BadCylinder.cs）と、サンプルプログラムのように別の頂点を用意した場合（右:Cylinder.cs）　左はライティングが不自然になっている]{
+//image[ProceduralModeling_cylinder_lighting][When the side of Cylinder and the top of the lid are shared (left: BadCylinder.cs), and when another vertex is prepared as in the sample program (right: Cylinder.cs), the lighting is unnatural on the left]{
 //}
 
 
 
 
-円形の蓋をモデリングするには、（GenerateCap関数から生成される）円周上に均等に並べられた頂点と、円の真ん中に位置する頂点を用意し、真ん中の頂点から円周に沿った頂点をつなぎ合わせて、均等に分けられたピザのように三角形を構築することで円形の蓋を形作ります。
+To model a circular lid,（GenerateCap Generated from a function）Prepare vertices evenly arranged on the circumference and vertices located in the middle of the circle, connect the vertices along the circumference from the middle vertices, and build a triangle like an evenly divided pizza To form a circular lid.
 
 
 
-//image[ProceduralModeling_cylinder_end][Cylinderの蓋のモデリング　segmentsパラメータが6の場合の例]{
+//image[ProceduralModeling_cylinder_end][CylinderModeling the lid of the case where the segments parameter is 6]{
 //}
 
 
 
 //emlist[][cs]{
-// 上端と下端の蓋を生成
+// // create top and bottom lids
 if(openEnded) {
-    // 蓋のモデルのための頂点は、ライティング時に異なった法線を利用するために、側面とは共有せずに新しく追加する
+    // New vertices for lid model, not shared with sides, to use different normals for lighting
     GenerateCap(
         segments + 1, 
         top, 
@@ -478,12 +475,12 @@ if(openEnded) {
         false
     );
 
-    // 上端の蓋の真ん中の頂点
+    // The top apex in the middle of the top lid
     vertices.Add(new Vector3(0f, top, 0f));
     uvs.Add(new Vector2(0.5f, 1f));
     normals.Add(new Vector3(0f, 1f, 0f));
 
-    // 下端の蓋の真ん中の頂点
+    // Middle apex of bottom lid
     vertices.Add(new Vector3(0f, bottom, 0f)); // bottom
     uvs.Add(new Vector2(0.5f, 0f));
     normals.Add(new Vector3(0f, -1f, 0f));
@@ -491,17 +488,17 @@ if(openEnded) {
     var it = vertices.Count - 2;
     var ib = vertices.Count - 1;
 
-    // 側面の分の頂点indexを参照しないようにするためのoffset
+    // Offset for not referencing the vertex index of the side
     var offset = len;
 
-    // 上端の蓋の面
+    // Top lid surface
     for (int i = 0; i < len; i += 2) {
         triangles.Add(it);
         triangles.Add((i + 2) % len + offset);
         triangles.Add(i + offset);
     }
 
-    // 下端の蓋の面
+    // Bottom lid surface
     for (int i = 1; i < len; i += 2) {
         triangles.Add(ib);
         triangles.Add(i + offset);
@@ -513,84 +510,80 @@ if(openEnded) {
 === Tubular
 
 
-Tubularは筒型のモデルで、次の図のような形をしています。
+Tubular is a tubular model that looks like the following figure.
 
 
 
-//image[ProceduralModeling_tubular][Tubularモデル]{
+//image[ProceduralModeling_tubular][Tubular model]{
+//}
+
+
+The Cylinder model has a straight, cylindrical shape, while the Tubular has a cylindrical shape that does not twist along a curve.
+In the example of the tree model described below, we use a method of expressing one branch with Tubular and constructing a single tree with that combination, but in the scene where a smoothly bending tubular type is required, Tubular I will play an active role.
+
+
+==== Cylindrical structure
+
+
+The structure of the tubular model is as shown in the figure below.
+
+
+
+//image[ProceduralModeling_tubular_structure][Cylindrical structure: The points that divide the curve along which the Tubular follows are visualized as spheres, and the nodes that make up the side surface are visualized as hexagons.]{
 //}
 
 
 
 
-Cylinderモデルはまっすぐに伸びる円筒形状ですが、Tubularは曲線に沿ったねじれのない筒型をしています。
-後述する樹木モデルの例では、一本の枝をTubularで表現し、その組み合わせで一本の木を構築する手法を採用しているのですが、滑らかに曲がる筒型が必要な場面でTubularは活躍します。
-
-
-==== 筒型の構造
-
-
-筒型モデルの構造は次の図のようになっています。
+The curve is divided, the sides are constructed for each node separated by the dividing points, and these are combined to generate one Tubular model.
 
 
 
-//image[ProceduralModeling_tubular_structure][筒型の構造　Tubularが沿う曲線を分割する点を球で、側面を構成する節を六角形で可視化している]{
-//}
+The side of each knot is the same as the side of Cylinder, because the top and bottom vertices of the side are evenly arranged along the circle and they are connected together to build.
+You can think of the Tubular type as connecting Cylinders along a curve.
+
+
+==== About curves
+
+In the sample program, the base class CurveBase that represents the curve is prepared.
+Various algorithms have been devised for how to draw a curve in a three dimensional space, and it is necessary to select an easy-to-use method according to the application.
+In the sample program, the class CatmullRomCurve that inherits the CurveBase class is used.
 
 
 
-
-曲線を分割し、分割点によって区切られた節ごとに側面を構築していき、それらを組み合わせることで1つのTubularモデルを生成します。
-
-
-
-1つ1つの節の側面はCylinderの側面と同じように、側面の上端と下端の頂点を円形に沿って均等に配置し、それらをつなぎ合わせて構築するため、
-Cylinderを曲線に沿って連結したものがTubular型だと考えることができます。
-
-
-==== 曲線について
-
-
-サンプルプログラムでは、曲線を表す基底クラスCurveBaseを用意しています。
-3次元空間上の曲線の描き方については、様々なアルゴリズムが考案されており、用途に応じて使いやすい手法を選択する必要があります。
-サンプルプログラムでは、CurveBaseクラスを継承したクラスCatmullRomCurveを利用しています。
+I will omit the details here, but CatmullRomCurve has the feature that it forms a curve while interpolating between points so that it passes through all the control points passed, and it is easy to use because you can specify the point you want to pass through the curve. It has a good reputation for its performance and ease of use.
 
 
 
-ここでは詳細は割愛しますが、CatmullRomCurveは渡された制御点全てを通るように点と点の間を補間しつつ曲線を形作るという特徴があり、曲線に経由させたい点を指定できるため、使い勝手の良さに定評があります。
-
-
-
-曲線を表すCurveBaseクラスでは、曲線上の点の位置と傾き（tangentベクトル）を得るためにGetPointAt(float)・GetTangentAt(float)関数を用意しており、引数に[0.0 ~ 1.0]の値を指定することで、始点（0.0）から終点（1.0）の間にある点の位置と傾きを取得できます。
+CurveBase class that represents a curve provides GetPointAt(float) and GetTangentAt(float) functions to obtain the position and slope (tangent vector) of a point on the curve, and specify the value of [0.0 to 1.0] as an argument. By doing so, the position and inclination of the point between the start point (0.0) and the end point (1.0) can be acquired.
 
 
 ==== Frenet frame
 
 
-曲線に沿ったねじれのない筒型を作るには、曲線に沿ってなめらかに変化する3つの直交するベクトル「接線（tangent）ベクトル、法線（normal）ベクトル、従法線（binormal）ベクトル」の配列が必要となります。接線ベクトルは、曲線上の一点における傾きを表す単位ベクトルのことで、法線ベクトルと従法線ベクトルはお互いに直交するベクトルとして求めます。
+In order to create a twist-free cylindrical shape along a curved line, three orthogonal vectors that change smoothly along the curved line: a tangent vector, a normal vector, and a binormal vector. An array is required. The tangent vector is a unit vector that represents the slope at one point on the curve. The normal vector and the binormal vector are obtained as mutually orthogonal vectors.
 
-これらの直交するベクトルによって、曲線上のある一点において「曲線に直交する円周上の座標」を得ることができます。
+With these orthogonal vectors, it is possible to obtain "coordinates on the circle orthogonal to the curve" at a certain point on the curve.
 
-//image[ProceduralModeling_tubular_trigonometry][法線（normal）と従法線（binormal）から、円周上の座標を指す単位ベクトル（v）を求める　この単位ベクトル（v）に半径radiusを乗算することで、曲線に直交する半径radiusの円周上の座標を得ることができる]{
+//image[ProceduralModeling_tubular_trigonometry][Normal（normal）And the binormal（binormal）From this, find the unit vector (v) that points to the coordinates on the circumference. By multiplying this unit vector (v) by the radius radius, you can obtain the coordinates on the circumference of the radius radius orthogonal to the curve.]{
 //}
 
-この曲線上のある一点における3つの直交するベクトルの組のことをFrenet frame（フレネフレーム）と呼びます。
+A set of three orthogonal vectors at one point on this curve is called a Frenet frame.
 
-//image[ProceduralModeling_tubular_frenet_frame][Tubularを構成するFrenet frame配列の可視化　枠が1つのFrenet frameを表し、3つの矢印は接線（tangent）ベクトル、法線（normal）ベクトル、従法線（binormal）ベクトルを示している]{
+//image[ProceduralModeling_tubular_frenet_frame][Visualization of Frenet frame array that composes Tubular Represents a frame, the three arrows are tangent Vector, normal Vector, showing binormal vector]{
 //}
 
-Tubularのモデリングは、このFrenet frameから得られた法線と従法線を元に節ごとの頂点データを求め、それらをつなぎ合わせていくという手順で行います。
+Tubular modeling is performed by obtaining vertex data for each node based on the normals and binormals obtained from this Frenet frame, and connecting them.
 
-サンプルプログラムでは、CurveBaseクラスがこのFrenet frame配列を生成するための関数ComputeFrenetFramesを持っています。
+In the sample program, the CurveBase class has a function ComputeFrenetFrames to generate this Frenet frame array.
 
-==== サンプルプログラム Tubular.cs
-
-
-Tubularクラスは曲線を表すCatmullRomCurveクラスを持ち、このCatmullRomCurveが描く曲線に沿って筒型を形成します。
+==== Sample program Tubular.cs
 
 
+The Tubular class has a CatmullRomCurve class that represents a curve, and forms a cylinder along the curve that this CatmullRomCurve draws.The Tubular class has a CatmullRomCurve class that represents a curve, and forms a cylinder along the curve that this CatmullRomCurve draws.
 
-CatmullRomCurveクラスは4つ以上の制御点が必要で、制御点を操作すると曲線の形状が変化し、それに伴ってTubularモデルの形状も変化していきます。
+
+The CatmullRomCurve class requires four or more control points, and when the control points are manipulated, the shape of the curve changes and the shape of the Tubular model changes accordingly.
 
 
 //emlist[][cs]{
@@ -600,14 +593,14 @@ var tangents = new List<Vector4>();
 var uvs = new List<Vector2>();
 var triangles = new List<int>();
 
-// 曲線からFrenet frameを取得
+// Get Frenet frame from the curve
 var frames = curve.ComputeFrenetFrames(tubularSegments, closed);
 
 // Tubularの頂点データを生成
 for(int i = 0; i < tubularSegments; i++) {
     GenerateSegment(curve, frames, vertices, normals, tangents, i);
 }
-// 閉じた筒型を生成する場合は曲線の始点に最後の頂点を配置し、閉じない場合は曲線の終点に配置する
+// If you want to create a closed cylinder, place the last vertex at the beginning of the curve, otherwise place it at the end of the curve.
 GenerateSegment(
     curve, 
     frames, 
@@ -617,7 +610,7 @@ GenerateSegment(
     (!closed) ? tubularSegments : 0
 );
 
-// 曲線の始点から終点に向かってuv座標を設定していく
+// Set uv coordinates from the start point to the end point of the curve
 for (int i = 0; i <= tubularSegments; i++) {
     for (int j = 0; j <= radialSegments; j++) {
         float u = 1f * j / radialSegments;
@@ -626,7 +619,7 @@ for (int i = 0; i <= tubularSegments; i++) {
     }
 }
 
-// 側面を構築
+// Build side
 for (int j = 1; j <= tubularSegments; j++) {
     for (int i = 1; i <= radialSegments; i++) {
         int a = (radialSegments + 1) * (j - 1) + (i - 1);
@@ -648,7 +641,7 @@ mesh.triangles = triangles.ToArray();
 //}
 
 
-関数GenerateSegmentは先述したFrenet frameから取り出した法線と従法線を元に、指定された節の頂点データを計算し、List型で渡された変数に設定します。
+The function GenerateSegment calculates the vertex data of the specified node based on the normals and binormals extracted from the Frenet frame described above and sets it in the variable passed in List type.
 
 
 //emlist[][cs]{
@@ -673,7 +666,7 @@ void GenerateSegment(
         // 0.0 ~ 2π
         float rad = 1f * j / radialSegments * PI2;
 
-        // 円周に沿って均等に頂点を配置する
+        // Distribute vertices evenly along the circumference
         float cos = Mathf.Cos(rad), sin = Mathf.Sin(rad);
         var v = (cos * N + sin * B).normalized;
         vertices.Add(p + radius * v);
@@ -685,67 +678,65 @@ void GenerateSegment(
 }
 //}
 
-== 複雑な形状
+== Complex shape
 
 
-この節では、これまで説明したProceduralModelingのテクニックを使って、より複雑なモデルを生成する手法について紹介します。
+This section introduces techniques for generating more complex models using the procedural modeling techniques described so far.
 
 
-=== 植物
+=== plant
 
 
-植物のモデリングは、ProceduralModelingのテクニックの応用例としてよく取り上げられています。
-Unity内でも樹木をEditor内でモデリングするためのTree API@<fn>{tree}が用意されていますし、
-Speed Tree@<fn>{speedtree}という植物のモデリング専用のソフトが存在します。
+Plant modeling is often cited as an application of Procedural Modeling techniques.
+Tree API @<fn>{tree} is available for modeling trees in Editor in Unity.
+There is software dedicated to plant modeling called Speed Tree@<fn>{speedtree}.
 
 //footnote[tree][https://docs.unity3d.com/ja/540/Manual/tree-FirstTree.html]
 //footnote[speedtree][http://www.speedtree.com/]
 
 
-この節では、植物の中でも比較的モデリング手法が単純な樹木のモデリングについて取り上げます。
+This section deals with modeling trees, which are relatively simple modeling methods among plants.
 
 
 === L-System
 
 
-植物の構造を記述・表現できるアルゴリズムとしてL-Systemがあります。
-L-Systemは植物学者であるAristid Lindenmayerによって1968年に提唱されたもので、L-SystemのLは彼の名前から来ています。
+L-System is an algorithm that can describe and express the structure of plants.
+The L-System was advocated by the botanist Aristid Lindenmayer in 1968, and the L for the L-System comes from his name.
 
 
 
-L-Systemを用いると、植物の形状に見られる自己相似性を表現することができます。
+L-System can be used to express the self-similarity found in plant shapes.
 
 
 
-自己相似性とは、物体の細部の形を拡大してみると、大きなスケールで見たその物体の形と一致することで、
-例えば樹木の枝分かれを観察すると、幹に近い部分の枝の分かれ方と、先端に近い部分の枝の分かれ方に相似性があります。
+Self-similarity means that when the shape of a detail of an object is enlarged, it matches the shape of the object seen on a large scale.
+For example, when observing the branching of trees, there is similarity in the way of branching near the trunk and the way of branching near the tip.
 
-
-
-//image[ProceduralModeling_tree_lsystem][それぞれの枝が30度ずつの変化で枝分かれした図形 根元の部分と枝先の部分で相似になっていることがわかるが、このようなシンプルな図形でも樹木のような形に見える（サンプルプログラム LSystem.scene）]{
+//image[ProceduralModeling_tree_lsystem][Figure that each branch is branched by 30 degrees change It can be seen that the root part and the branch part are similar, but even such a simple figure looks like a tree (sample program LSystem .scene)]{
 //}
 
 
 
 
-L-Systemは、要素を記号で表し、記号を置き換える規則を定め、記号に対して規則を繰り返し適用していくことで、記号の列を複雑に発展させていくメカニズムを提供します。
+The L-System provides a mechanism to develop a complex sequence of symbols by expressing elements by symbols, defining rules for replacing symbols, and applying the rules repeatedly to symbols.
 
 
 
-例えば簡単な例をあげると、
+A simple example
 
- * 初期文字列:a
-
-
-
-を
-
- * 書き換え規則1: a -> ab
- * 書き換え規則2: b -> a
+ * Initial character string: a
 
 
 
-に従って書き換えていくと、
+To
+
+ * Rewrite rule 1: a -> ab
+ * Rewrite rule 2: b -> a
+
+
+
+When rewriting according to
 
 
 
@@ -753,58 +744,52 @@ a -> ab -> aba -> abaab -> abaababa -> ...
 
 
 
-という風にステップを経るごとに複雑な結果を生み出します。
+It produces complicated results with each step.
 
 
 
-このL-Systemをグラフィック生成に利用した例がサンプルプログラムのLSystemクラスです。
+An example of using this L-System for graphic generation is the LSystem class of the sample program.
 
 
 
-LSystemクラスでは、以下の操作
+In LSystem class, the following operations
 
- * Draw: 向いている方向に向かって線を引きつつ進む
- * Turn Left: 左にθ度回転する
- * Turn Right: 右にθ度回転する
-
-
-
-を用意しており、
-
- * 初期操作: Draw
+ * Draw: Draw a line in the direction you are facing
+ * Turn Left: Rotate θ degrees to the left
+ * Turn Right: Turn θ degrees to the right
 
 
 
-を
+Are available,
 
- * 書き換え規則1: Draw -> Turn Left | Turn Right
- * 書き換え規則2: Turn Left -> Draw
- * 書き換え規則3: Turn Right -> Draw
+ * Initial operation: Draw
 
+To
 
+ * Rewrite Rule 1: Draw -> Turn Left | Turn Right
+ * Rewrite Rule 2: Turn Left -> Draw
+ * Rewrite Rule 3: Turn Right -> Draw
 
-に従って、決まられた回数だけ規則の適用を繰り返しています。
-
-
-
-その結果、サンプルのLSystem.sceneに示すような、自己相似性を持つ図を描くことができます。
-このL-Systemの持つ「状態を再帰的に書き換えていく」という性質が自己相似性を生み出すのです。
-自己相似性はFractal（フラクタル）とも呼ばれ、1つの研究分野にもなっています。
+According to, the rules are applied a fixed number of times.
 
 
-=== サンプルプログラム ProceduralTree.cs
+As a result, you can draw a diagram with self-similarity, as shown in the sample LSystem.scene.
+The property of "recursively rewriting state" of this L-System creates self-similarity.
+Self-similarity, also called Fractal, is a research area.
 
 
-実際にL-Systemを樹木のモデルを生成するプログラムに応用した例として、ProceduralTreeというクラスを用意しました。
+=== Sample program ProceduralTree.cs
 
 
-
-ProceduralTreeでは、前項で解説したLSystemクラスと同様に「枝を進めては分岐し、さらに枝を進める」というルーチンを再帰的に呼び出すことで木の形を生成していきます。
+As an example of actually applying L-System to a program for generating a tree model, we have prepared a class called ProceduralTree.
 
 
 
-前項のLSystemクラスでは、枝の分岐に関しては「一定角度、左と右の二方向に分岐する」という単純なルールでしたが、
-ProceduralTreeでは乱数を用い、分岐する数や分岐方向にランダム性を持たせ、枝が複雑に分岐するようなルールを設定しています。
+In ProceduralTree, the tree shape is generated by recursively calling the routine "advance a branch, then a branch, and then an additional branch" as in the LSystem class described in the previous section.
+
+
+In the LSystem class of the previous section, regarding the branching of the branch, it was a simple rule to "branch in two directions, left and right, at a fixed angle",
+Procedural Tree uses random numbers to give randomness to the number of branches and the direction of branching, and sets rules such that branches branch in a complicated manner.
 
 
 
@@ -813,84 +798,82 @@ ProceduralTreeでは乱数を用い、分岐する数や分岐方向にランダ
 
 
 
-==== TreeDataクラス
+==== TreeData class
 
 
-TreeDataクラスは枝の分岐具合を定めるパラメータや、木のサイズ感やモデルのメッシュの細かさを決めるパラメータを内包したクラスです。
-このクラスのインスタンスのパラメータを調整することで、木の形をデザインすることができます。
+TreeData class is a class that includes parameters that determine the branching condition of branches, parameters that determine the size of the tree and the fineness of the model mesh.
+You can design a tree shape by adjusting the parameters of the instance of this class.
 
 
-==== 枝分かれ
+==== Branching
 
 
-TreeDataクラス内のいくつかのパラメータを用いて枝の分かれ具合を調整します。
+Adjust the branching using some parameters in the TreeData class.
 
 
 ===== branchesMin, branchesMax
 
 
-1つの枝から分岐する枝の数はbranchesMin・branchesMaxパラメータで調整します。
-branchesMinが分岐する枝の最小数、branchesMaxが分岐する枝の最大数を表しており、branchesMinからbranchesMaxの間の数をランダムに選び、分岐する数を決めます。
+The number of branches that branch from one branch is adjusted by the branchesMin/branchesMax parameter.
+branchesMin represents the minimum number of branches and branchesMax represents the maximum number of branches. The number between branchesMin and branchesMax is randomly selected to determine the number of branches.
 
 
 ===== growthAngleMin, growthAngleMax, growthAngleScale
 
-
-分岐する枝が生える方向はgrowthAngleMin・growthAngleMaxパラメータで調整します。
-growthAngleMinは分岐する方向の最小角度、growthAngleMaxが最大角度を表しており、growthAngleMinからgrowthAngleMaxの間の数をランダムに選び、分岐する方向を決めます。
-
-
-
-それぞれの枝は伸びる方向を表すtangentベクトルと、それと直交するベクトルとしてnormalベクトルとbinormalベクトルを持ちます。
+The direction in which the branching branches grow is adjusted with the growthAngleMin and growthAngleMax parameters.
+growthAngleMin represents the minimum angle of the branching direction, growthAngleMax represents the maximum angle, and the number between growthAngleMin and growthAngleMax is randomly selected to determine the branching direction.
 
 
 
-growthAngleMin・growAngleMaxパラメータからランダムに得られた値は、分岐点から伸びる方向のtangentベクトルに対して、normalベクトルの方向とbinormalベクトルの方向に回転が加えられます。
+Each branch has a tangent vector that represents the direction in which it extends, and a normal vector and a binormal vector that are orthogonal to it.
 
 
 
-分岐点から伸びる方向tangentベクトルに対してランダムな回転を加えることで、分岐先の枝が生える方向を変化させ、枝分かれを複雑に変化させます。
+The values randomly obtained from the growthAngleMin and growAngleMax parameters are rotated in the normal vector direction and the binormal vector direction with respect to the tangent vector extending from the branch point.
 
 
-//image[ProceduralModeling_tree_branches][分岐点から伸びる方向に対してかけられるランダムな回転　分岐点でのTの矢印は伸びる方向（tangentベクトル）、Nの矢印は法線（normalベクトル）、Bの矢印は従法線（binormalベクトル）を表し、伸びる方向に対して法線と従法線の方向にランダムな回転がかけられる]{
+
+By adding a random rotation to the direction tangent vector extending from the branch point, the direction in which the branch destination branch grows is changed, and the branching is complicatedly changed.
+
+//image[ProceduralModeling_tree_branches][Random rotation applied to the direction extending from the branch point T arrow at the branch point is the extending direction (tangent vector), N arrow is the normal line (normal vector), B arrow is the binormal line (binormal vector) Represents a random rotation in the normal and binormal directions with respect to the extending direction.]{
 //}
 
 
-枝が生える方向にランダムにかけられる回転の角度が枝先にいくほど大きくなるようにgrowthAngleScaleパラメータを用意しています。
-このgrowthAngleScaleパラメータは、枝のインスタンスが持つ世代を表すgenerationパラメータが0に近づくほど、つまり枝先に近づくほど、回転する角度に強く影響し、回転の角度を大きくします。
+The growthAngleScale parameter is prepared so that the angle of rotation that is randomly applied in the direction in which the branch grows becomes larger as it goes to the tip of the branch.
+This growthAngleScale parameter strongly influences the angle of rotation as the generation parameter representing the generation of the branch instance approaches 0, that is, the edge of the branch, and increases the angle of rotation.
 
 
 //emlist[][cs]{
-// 枝先ほど分岐する角度が大きくなる
+// The branching angle increases as the end of the branch branches
 var scale = Mathf.Lerp(
     1f, 
     data.growthAngleScale, 
     1f - 1f * generation / generations
 );
 
-// normal方向の回転
+// rotation in the normal direction
 var qn = Quaternion.AngleAxis(scale * data.GetRandomGrowthAngle(), normal);
 
-// binormal方向の回転
+// rotation in binormal direction
 var qb = Quaternion.AngleAxis(scale * data.GetRandomGrowthAngle(), binormal);
 
-// 枝先が向いているtangent方向にqn * qbの回転をかけつつ、枝先の位置を決める
+// Determine the position of the branch tip by applying qn * qb rotation in the tangent direction in which the branch tip is facing.
 this.to = from + (qn * qb) * tangent * length;
 //}
 
-==== TreeBranchクラス
+==== TreeBranch class
 
-枝はTreeBranchクラスで表現されます。
+Branches are represented by the TreeBranch class.
 
-世代数（generations）と基本となる長さ（length）と太さ（radius）のパラメータに加えて、分岐パターンを設定するためのTreeDataを引数に指定してコンストラクタを呼び出すと、内部で再帰的にTreeBranchのインスタンスが生成されていきます。
+In addition to the parameters of the number of generations (generations) and the basic length (length) and thickness (radius), when you call the constructor by specifying the TreeData for setting the branching pattern as an argument, recursively inside TreeBranch instances will be created.
 
-1つのTreeBranchから分岐したTreeBranchは、元のTreeBranch内にあるList<TreeBranch>型であるchildren変数に格納され、根元のTreeBranchから全ての枝に辿れるようにしています。
+The TreeBranch branched from one TreeBranch is stored in the child variable of List<TreeBranch> type in the original TreeBranch, and all branches can be traced from the root TreeBranch.
 
-==== TreeSegmentクラス
+==== TreeSegment class
 
-一本の枝のモデルは、Tubular同様、一本の曲線を分割し、分割された節を1つのCylinderとしてモデル化し、それらをつなぎ合わせていくように構築していきます。
+Similar to Tubular, the model of one branch is constructed by dividing one curve, modeling the divided nodes as one Cylinder, and connecting them together.
 
-TreeSegmentクラスは一本の曲線を分割する節（Segment）を表現するクラスです。
+TreeSegment class is a class that represents a segment (Segment) that divides one curve.
 
 
 //emlist[][cs]{
@@ -899,8 +882,8 @@ public class TreeSegment {
     public Vector3 Position { get { return position; } }
     public float Radius { get { return radius; } }
 
-    // TreeSegmentが向いている方向ベクトルtangent、
-    // それと直交するベクトルnormal、binormalを持つFrenetFrame
+    // Direction vector tangent that TreeSegment is facing,
+    // FrenetFrame with vectors normal and binormal orthogonal to it
     FrenetFrame frame;
 
     // TreeSegmentの位置
@@ -918,14 +901,14 @@ public class TreeSegment {
 //}
 
 
-1つのTreeSegmentは節が向いている方向のベクトルと直交ベクトルがセットになったFrenetFrame、位置と幅を表す変数を持ち、Cylinderを構築する際の上端と下端に必要な情報を保持します。
+One TreeSegment has FrenetFrame which is a set of vector of the direction in which the node is facing and orthogonal vector, variables that represent position and width, and holds the information required at the top and bottom when building the Cylinder.
 
 
-==== ProceduralTreeモデル生成
+==== Procedural Tree model generation
 
 
-ProceduralTreeのモデル生成ロジックはTubularを応用したもので、一本の枝TreeBranchが持つTreeSegmentの配列からTubularモデルを生成し、
-それらを1つのモデルに集約することで全体の一本の木を形作る、というアプローチでモデリングしています。
+The model generation logic of ProceduralTree is an application of Tubular. It generates a Tubular model from the TreeSegment array of one branch TreeBranch.
+Modeling is done by aggregating them into a single model to form an entire tree.
 
 
 //emlist[][cs]{
@@ -942,19 +925,19 @@ var tangents = new List<Vector4>();
 var uvs = new List<Vector2>();
 var triangles = new List<int>();
 
-// 木の全長を取得
-// 枝の長さを全長で割ることで、uv座標の高さ(uv.y)が
-// 根元から枝先に至るまで[0.0 ~ 1.0]で変化するように設定する
+// Get the full length of a tree
+// By dividing the length of the branch by the total length, the height of the uv coordinate (uv.y) is
+// Set to change from [0.0 to 1.0] from root to branch
 float maxLength = TraverseMaxLength(root);
 
-// 再帰的に全ての枝を辿り、1つ1つの枝に対応するMeshを生成する
+//Recursively traverses all branches and creates a mesh corresponding to each branch
 Traverse(root, (branch) => {
     var offset = vertices.Count;
 
     var vOffset = branch.Offset / maxLength;
     var vLength = branch.Length / maxLength;
 
-    // 一本の枝から頂点データを生成する
+    // Generate vertex data from one branch
     for(int i = 0, n = branch.Segments.Count; i < n; i++) {
         var t = 1f * i / (n - 1);
         var v = vOffset + vLength * t;
@@ -979,7 +962,7 @@ Traverse(root, (branch) => {
         }
     }
 
-    // 一本の枝の三角形を構築する
+    // Construct a triangle with one branch
     for (int j = 1; j <= data.heightSegments; j++) {
         for (int i = 1; i <= data.radialSegments; i++) {
             int a = (data.radialSegments + 1) * (j - 1) + (i - 1);
@@ -1008,79 +991,79 @@ mesh.RecalculateBounds();
 //}
 
 
-植物のプロシージャルモデリングは樹木だけでも奥深く、日光の照射率が高くなるように枝分かれすることで自然な木のモデルを得るようにする、といった手法などが考案されています。
+For procedural modeling of plants, methods have been devised such as deep in trees alone, and by branching so that the irradiation rate of sunlight is high, a natural tree model is obtained.
 
-こうした植物のモデリングに興味がある方はL-Systemを考案したAristid Lindenmayerにより執筆されたThe Algorithmic Beauty of Plants@<fn>{abop}に様々な手法が紹介されていますので、参考にしてみてください。 
+For those who are interested in modeling such plants, various methods are introduced in The Algorithmic Beauty of Plants@<fn>{abop} written by Aristid Lindenmayer who invented L-System, so please refer to it. ..
 
 //footnote[abop][http://algorithmicbotany.org/papers/#abop]
 
 
-== プロシージャルモデリングの応用例
+== Application example of procedural modeling
 
 
-これまで紹介したプロシージャルモデリングの例から、「モデルをパラメータによって変化させながら動的に生成できる」というテクニックの利点を知ることができました。
-効率的に様々なバリエーションのモデルを作成できるため、コンテンツ開発の効率化のための技術という印象を受けるかもしれません。
+From the examples of procedural modeling introduced so far, you can see the advantage of the technique that "models can be dynamically generated while changing with parameters".
+Since you can efficiently create various variations of models, you may get the impression that it is a technology for streamlining content development.
 
 
-しかし、世の中にあるモデリングツールやスカルプトツールのように、プロシージャルモデリングのテクニックは「ユーザの入力に応じて、インタラクティブにモデルを生成する」という応用も可能です。
+However, like the modeling tools and sculpting tools in the world, the technique of procedural modeling can be applied to "generate a model interactively according to the user's input".
 
 
-応用例として、東京大学大学院情報工学科の五十嵐健夫氏により考案された、手書きスケッチによる輪郭線から立体モデルを生成する技術「Teddy」についてご紹介します。
+As an application example, we would like to introduce "Teddy," a technology that was invented by Takeo Igarashi of the University of Tokyo's Graduate School of Information Engineering to generate a three-dimensional model from contour lines created by handwriting sketches.
 
 
-//image[ProceduralModeling_teddy][手書きスケッチによる3次元モデリングを行う技術「Teddy」のUnityアセット　http://uniteddy.info/ja]{
+//image[ProceduralModeling_teddy][Unity asset of "Teddy" technology for 3D modeling by handwriting sketch　http://uniteddy.info/ja]{
 //}
 
 
-2002年にプレイステーション2用のソフトとして発売された「ガラクタ名作劇場 ラクガキ王国」@<fn>{rakugaki}というゲームでは実際にこの技術が用いられ、「自分の描いた絵を3D化してゲーム内のキャラクターとして動かす」という応用が実現されています。
+This technology was actually used in a game called "Garagaku Masterpiece Theater: Rakugaki Kingdom" @<fn>{rakugaki}, which was released as software for PlayStation 2 in 2002. The application of "moving as a character" has been realized.
 
 //footnote[rakugaki][https://ja.wikipedia.org/wiki/ラクガキ王国]
 
-この技術では、
+With this technology,
 
- * 2次元平面上に描かれた線を輪郭として定義する
- * 輪郭線を構成する点配列に対してドロネー三角形分割（Delaunay Triangulation）@<fn>{delaunay}と呼ばれるメッシュ化処理を施す
- * 得られた2次元平面上のメッシュに対して、立体に膨らませるアルゴリズムを適用する
+  * Define a line drawn on a 2D plane as a contour
+  * Perform a meshing process called Delaunay Triangulation @<fn>{delaunay} on the array of points that make up the contour line
+  * Apply an algorithm to inflate the mesh on the obtained 2D plane
 
 //footnote[delaunay][https://en.wikipedia.org/wiki/Delaunay_triangulation]
 
-という手順で3次元モデルを生成しています。
-アルゴリズムの詳細に関してはコンピュータグラフィクスを扱う国際会議SIGGRAPHにて発表された論文が公開されています。@<fn>{teddy}
+The 3D model is generated by the procedure.
+For details of the algorithm, a paper presented at SIGGRAPH, an international conference dealing with computer graphics, has been published. @<fn>{teddy}
 
 //footnote[teddy][http://www-ui.is.s.u-tokyo.ac.jp/~takeo/papers/siggraph99.pdf]
 
 
-TeddyはUnityに移植されたバージョンがAsset Storeに公開されているので、誰でもコンテンツにこの技術を組み込むことができます。
+A version of Teddy that has been ported to Unity is available on the Asset Store, so anyone can incorporate this technology into their content.
 @<fn>{uniteddy}
 
-//footnote[uniteddy][http://uniteddy.info/ja/]
+//footnote[uniteddy][http://uniteddy.info]
 
 
-このようにプロシージャルモデリングのテクニックを用いれば、独自のモデリングツールを開発することができ、
-ユーザの創作によって発展していくようなコンテンツを作ることも可能になります。
+By using procedural modeling techniques like this, you can develop your own modeling tool,
+It is also possible to create content that will evolve as the user creates it.
 
 
-== まとめ
+== Summary
 
 
-プロシージャルモデリングのテクニックを使えば、
+With procedural modeling techniques,
 
- * （ある条件下での）モデル生成の効率化
- * ユーザの操作に応じてインタラクティブにモデルを生成するツールやコンテンツの開発
+ * Efficient model generation (under certain conditions)
+ * Development of tools and contents that interactively generate models according to user operations
 
-が実現できることを見てきました。
+We have seen that can be realized.
 
-Unity自体はゲームエンジンであるため、本章で紹介した例からはゲームや映像コンテンツ内での応用を想像されるでしょう。
+Unity itself is a game engine, so you can imagine its application in games and video content from the examples presented in this chapter.
 
-しかし、コンピュータグラフィックスの技術自体の応用範囲が広いように、モデルを生成する技術の応用範囲も広いものだと考えることができます。
-冒頭でも述べましたが、建築やプロダクトデザインの分野でもプロシージャルモデリングの手法が利用されていますし、
-3Dプリンタ技術などのデジタルファブリケーションの発展にともなって、デザインした形を実生活で利用できる機会が個人レベルでも増えてきています。
+However, just as the computer graphics technology itself has a wide range of applications, it can be considered that the technology of model generation has a wide range of applications.
+As I mentioned at the beginning, procedural modeling methods are used in the fields of architecture and product design,
+With the development of digital fabrication such as 3D printer technology, opportunities to use designed shapes in real life are increasing at the individual level.
 
-このように、どのような分野でデザインした形を利用するかを広い視野で考えると、
-プロシージャルモデリングのテクニックを応用できる場面が様々なところから見つかるかもしれません。
+In this way, considering in which field the designed shape is used,
+There may be many places where you can apply procedural modeling techniques.
 
-== 参考
- * CEDEC2008 コンピュータが知性でコンテンツを自動生成--プロシージャル技術とは - http://news.mynavi.jp/articles/2008/10/08/cedec03/
+== reference
+ * Computers intelligently generate content--what is procedural technology?
  * The Algorithmic Beauty of Plants - http://algorithmicbotany.org/papers
  * nervous system - http://n-e-r-v-o-u-s.com/
 
