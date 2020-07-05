@@ -303,10 +303,10 @@ void KernelFunction_A(uint3 groupID : SV_GroupID,
 //}
 
 
-@<code>{groupThreadID(SV_GroupThreadID)} は、
-今このカーネルが、グループ内の何番目のスレッドで実行されているかを示す値が入るので、
-この例では (0 ~ 3, 0, 0) が入ります。したがって、@<code>{groupThreadID.x} は 0 ~ 3 です。
-つまり、@<code>{intBuffer[0] = 0}　～ @<code>{intBuffer[3] = 3} までが並列して実行されることになります。
+@<code>{groupThreadID(SV_GroupThreadID)} Is
+Now it has a value that tells how many threads this group is running in the group, so
+In this example, (0 ~ 3, 0, 0) will be entered. So @<code>{groupThreadID.x} is 0-3.
+In other words, @<code>{intBuffer[0] = 0} to @<code>{intBuffer[3] = 3} will be executed in parallel.
 
 
 === Run a different kernel (B)
@@ -412,36 +412,36 @@ void KernelFunction_A(uint3 dispatchThreadID : SV_DispatchThreadID)
 
 
 sample (1) では @<code>{SV_DispatchThradID} I didn't use semantics.
-It's a little complicated,@<b>{「あるカーネルを実行するスレッドが、すべてのスレッドの中のどこに位置するか (x,y,z) 」}Is shown.
+It's a little complicated,@<b>{"Where is the thread that runs a kernel located among all threads?" (x,y,z) 」}Is shown.
 
-@<code>{SV_DispathThreadID} は、@<code>{SV_Group_ID * numthreads + SV_GroupThreadID} で算出される値です。
-@<code>{SV_Group_ID} はあるグループを (x, y, z) で示し、@<code>{SV_GroupThreadID} は、あるグループに含まれるスレッドを (x, y, z) で示します。
-
-
-==== 具体的な計算例 (1)
+@<code>{SV_DispathThreadID} は、@<code>{SV_Group_ID * numthreads + SV_GroupThreadID} The value calculated by.
+@<code>{SV_Group_ID} A certain group (x, y, z) Indicated by @<code>{SV_GroupThreadID} The threads contained in a group (x, y, z) Indicate.
 
 
-例えば、(2, 2, 1) グループで、(4, 1, 1) スレッドで実行される、カーネルを実行するとします。
-その内の 1 つのカーネルは、(0, 1, 0) 番目のグループに含まれる、(2, 0, 0) 番目のスレッドで実行されます。
-このとき @<code>{SV_DispatchThreadID} は、(0, 1, 0) * (4, 1, 1) + (2, 0, 0) = (0, 1, 0) + (2, 0, 0) = (2, 1, 0) になります。
+==== Specific calculation example (1)
 
 
-==== 具体的な計算例 (2)
+For example, suppose you want to run a kernel that runs in (2, 2, 1) groups with (4, 1, 1) threads.
+One of them runs in the (2, 0, 0)th thread of the (0, 1, 0)th group.
+At this time @<code>{SV_DispatchThreadID} Is (0, 1, 0) * (4, 1, 1) + (2, 0, 0) = (0, 1, 0) + (2, 0, 0) = (2, 1, 0) Will be.
 
 
-今度は最大値を考えましょう。(2, 2, 1) グループで、(4, 1, 1) スレッドでカーネルが実行されるとき、
-(1, 1, 0) 番目のグループに含まれる、(3, 0, 0) 番目のスレッドが最後のスレッドです。
-このとき @<code>{SV_DispatchThreadID} は、(1, 1, 0) * (4, 1, 1) + (3, 0, 0) = (4, 1, 0) + (3, 0, 0) = (7, 1, 0) になります。
+==== Specific calculation example (2)
 
 
-=== テクスチャ (ピクセル) に値を書き込む
+Now let's consider the maximum value. In the (2, 2, 1) group, when the kernel runs with (4, 1, 1) threads,
+(1, 1, 0) In the second group, (3, 0, 0) The second thread is the last thread.
+At this time @<code>{SV_DispatchThreadID} Is (1, 1, 0) * (4, 1, 1) + (3, 0, 0) = (4, 1, 0) + (3, 0, 0) = (7, 1, 0) Will be.
 
 
-以降は時系列順に解説するのが困難ですので、サンプル全体に目を通しながら確認してください。
+=== Write value to texture (pixel)
 
-サンプル (2) の @<code>{dispatchThreadID.xy} は、
-テクスチャ上にあるすべてのピクセルを示すように、グループとスレッドを設定しています。
-グループを設定するのはスクリプト側なので、スクリプトとコンピュートシェーダを横断して確認する必要があります。
+
+Since it is difficult to explain in chronological order, check the entire sample while checking.
+
+sample (2) of @<code>{dispatchThreadID.xy} Is
+I've set up a group and a thread to show all the pixels on the texture.
+Since it is the script side that sets up the group, we need to see it across the script and the compute shader.
 
 //emlist[SimpleComputeShader_Texture.compute]{
 textureBuffer[dispatchThreadID.xy]
@@ -451,21 +451,21 @@ textureBuffer[dispatchThreadID.xy]
              1);
 //}
 
-このサンプルでは仮に 512x512 のテクスチャを用意していますが、@<code>{dispatchThreadID.x} が 0 ~ 511 を示すとき、
-@<code>{dispatchThreadID / width} は、0 ~ 0.998… を示します。
-つまり @<code>{dispatchThreadID.xy} の値( = ピクセル座標)が大きくなるにつれて、黒から白に塗りつぶしていくことになります。
+In this sample 512x512 Although the texture of is prepared, @<code>{dispatchThreadID.x} But 0 ~ 511 When
+@<code>{dispatchThreadID / width} Is 0 ~ 0.998… Indicates.
+That is @<code>{dispatchThreadID.xy} As the value of increases (= pixel coordinates), it will fill from black to white.
 
 //note{
-テクスチャは、RGBA チャネルから構成され、それぞれ 0 ~ 1 で設定します。
-すべて 0 のとき、完全に黒くなり、すべて 1 のとき、完全に白くなります。
+The texture consists of RGBA channels and is set between 0 and 1.
+When all 0s, it becomes completely black, when all 1s, it becomes completely white.
 //}
 
 
-=== テクスチャの用意
+=== Prepare the texture
 
 
-以降がスクリプト側の実装の解説です。サンプル (1) では、コンピュートシェーダの計算結果を保存するために配列のバッファを用意しました。
-サンプル (2) では、その代わりにテクスチャを用意します。
+Below is the explanation of the implementation on the script side. In sample (1), an array buffer is prepared to store the calculation result of the compute shader.
+For sample (2), prepare a texture instead.
 
 //emlist[SimpleComputeShader_Texture.cs]{
 RenderTexture renderTexture_A;
@@ -479,18 +479,18 @@ void Start()
 …
 //}
 
-解像度とフォーマットを指定して RenderTexture を初期化します。
-このとき @<code>{RenderTexture.enableRandomWrite} を有効にして、
-テクスチャへの書き込みを有効にしている点に注意します。
+Initialize RenderTexture with resolution and format.
+At this time @<code>{RenderTexture.enableRandomWrite} Enable
+Note that we have enabled writing to the texture.
 
  * RenderTexture.enableRandomWrite - Unity
  ** @<href>{https://docs.unity3d.com/ScriptReference/RenderTexture-enableRandomWrite.html}
 
 
-=== スレッド数の取得
+=== Get the number of threads
 
 
-カーネルのインデックスが取得できるように、カーネルがどれくらいのスレッド数で実行できるかも取得できます(スレッドサイズ)。
+You can also get how many threads the kernel can run (thread size) just as you can get the index of the kernel.
 
 //emlist[SimpleComputeShader_Texture.cs]{
 void Start()
@@ -505,15 +505,15 @@ void Start()
 //}
 
 
-=== カーネルの実行
+=== Kernel execution
 
 
-@<code>{Dispath} メソッドで処理を実行します。このとき、グループ数の指定方法に注意します。
-この例では、グループ数は「テクスチャの水平(垂直)方向の解像度 / 水平(垂直)方向のスレッド数」で算出しています。
+@<code>{Dispath} The process is executed by the method. At this time, pay attention to the method of specifying the number of groups.
+In this example, the number of groups is calculated as "resolution of texture in horizontal (vertical) direction / number of threads in horizontal (vertical) direction".
 
-水平方向について考えるとき、テクスチャの解像度は 512、スレッド数は 8 ですから、
-水平方向のグループ数は 512 / 8 = 64 になります。同様に垂直方向も 64 です。
-したがって、合計グループ数は 64 * 64 = 4096 になります。
+When considering the horizontal direction, the texture resolution is 512 and the number of threads is 8, so
+The number of groups in the horizontal direction is 512/8 = 64. Similarly, the vertical direction is 64.
+Therefore, the total number of groups is 64 * 64 = 4096.
 
 //emlist[SimpleComputeShader_Texture.cs]{
 void Update()
@@ -528,161 +528,156 @@ void Update()
         .material.mainTexture = this.renderTexture_A;
 //}
 
-言い換えれば、各グループは 8 * 8 * 1 = 64 (= スレッド数) ピクセルずつ処理することになります。
-グループは 4096 あるので、4096 * 64 = 262,144 ピクセル処理します。
-画像は、512 * 512 = 262,144 ピクセルなので、ちょうどすべてのピクセルを並列に処理できたことになります。
+In other words, each group will process 8 * 8 * 1 = 64 (= number of threads) pixels.
+Since there are 4096 groups, we will process 4096 * 64 = 262,144 pixels.
+The image is 512 * 512 = 262,144 pixels, which means that all pixels could be processed in parallel.
+
+==== Running different kernels
 
 
-==== 異なるカーネルの実行
+The other kernel fills using the y coordinate instead of x.
+Note that at this time, a value close to 0, a black color appears at the bottom.
+You may need to consider the origin when working with textures.
 
 
-もう一方のカーネルは、x ではなく、 y 座標を使って塗りつぶしていきます。
-このとき 0 に近い値、黒い色が下のほうに表れている点に注意します。
-テクスチャを操作するときは原点を考慮しなければならないこともあります。
+=== Advantages of multidimensional threads, groups
 
 
-=== 多次元スレッド、グループの利点
-
-
-サンプル (2) のように、多次元の結果が必要な場合、あるいは多次元の演算が必要な場合には、多次元のスレッドやグループが有効に働きます。
-もしサンプル (2) を 1 次元のスレッドで処理しようとすると、縦方向のピクセル座標を任意に算出する必要があります。
+Multidimensional threads and groups work well when you need multidimensional results or multidimensional operations, like in sample (2).
+If you try to process sample (2) in a one-dimensional thread, you need to compute the vertical pixel coordinates arbitrarily.
 
 //note{
-実際に実装しようとすると確認できますが、画像処理でいうところのストライド、例えば 512x512 の画像があるとき、
-その 513 番目のピクセルは、(0, 1) 座標になる、といった算出が必要になります。
+You can confirm it by actually implementing it, but when there is a stride in the image processing, for example, a 512x512 image,
+The 513th pixel needs to be calculated as (0, 1) coordinates.
 //}
 
-演算数は削減したほうが良いですし、高度な処理を行うにしたがって複雑さは増します。
-コンピュートシェーダを使った処理を設計するときは、上手く多次元を活用できないか検討するのが良いです。
+It is better to reduce the number of operations, and the complexity increases with advanced processing.
+When designing a process that uses a compute shader, it is a good idea to consider whether you can utilize multidimensionality well.
 
 
-== さらなる学習のための補足情報
+== Additional information for further learning
+
+In this chapter, we used introductory information in the form of explaining a sample about the compute shader.
+In the future, I will supplement some information that will be necessary for further learning.
+
+=== GPU Architecture/basic structure
 
 
-本章ではコンピュートシェーダについてサンプルを解説する形式で入門情報としましたが、
-これから先、学習を進める上で必要ないくつかの情報を補足します。
+//image[primerofcomputeshader02][GPU Image of architecture][scale=1]
 
+If you have a basic knowledge of GPU architecture and structure,
+I will introduce it here a little because it helps to optimize it when implementing processing using Compute Shader.
 
-=== GPU アーキテクチャ・基本構造
+GPU Are numerous @<b>{Streaming Multiprocessor(SM)} Is installed,
+They share and parallelize and execute the given process.
 
+SM is even smaller @<b>{Streaming Processor(SP)} Is installed,
+SM The process assigned to SP Is calculated by.
 
-//image[primerofcomputeshader02][GPU アーキテクチャのイメージ][scale=1]
+SM has @<b>{registers} and @<b>{shared memory},
+You can read and write faster than @<b>{Global memory (memory on DRAM)}.
+Registers are used for local variables that are only referenced inside functions,
+The shared memory can be referenced and written by all SPs that belong to the same SM.
 
-GPU のアーキテクチャ・構造についての基本的な知識があれば、
-コンピュートシェーダを使った処理の実装の際、それを最適化するために役に立つので、少しだけここで紹介します。
+In other words, grasp the maximum size and scope of each memory,
+Ideally, you should be able to implement the optimum implementation that can read and write memory without waste and at high speed.
 
-GPU は多数の @<b>{Streaming Multiprocessor(SM)} が搭載されていて、そ
-れらが分担・並列化して与えられた処理を実行します。
-
-SM には更に小さな @<b>{Streaming Processor(SP)} が複数搭載されていて、
-SM に割り当てられた処理を SP が計算する、といった形式です。
-
-SM には@<b>{レジスタ}と@<b>{シェアードメモリ}が搭載されていて、
-@<b>{グローバルメモリ(DRAM上のメモリ)}よりも高速に読み書きすることができます。
-レジスタは関数内でのみ参照されるローカル変数に使われ、
-シェアードメモリは同一 SM 内に所属するすべての SP から参照し書き込むことができます。
-
-つまり、各メモリの最大サイズやスコープを把握し、
-無駄なく高速にメモリを読み書きできる最適な実装を実現できるのが理想です。
-
-例えば最も考慮する必要があるであろうシェアードメモリは、
-クラス修飾子 (storage-class modifiers) @<code>{groupshared} を使って定義します。
-ここでは入門なので具体的な導入例を割愛しますが、最適化に必要な技術・用語として覚えておいて、以降の学習に役立ててください。
+For example, the shared memory that you need to consider most is
+Storage-class modifiers Defined using @<code>{groupshared}.
+Since this section is an introduction, I will omit specific examples of introduction, but please remember them as techniques and terms necessary for optimization, and use them for subsequent learning.
 
  * Variable Syntax - Microsoft Developer Network
  ** @<href>{https://msdn.microsoft.com/en-us/library/bb509706(v=vs.85).aspx}
 
 
-==== レジスタ
+==== register
 
 
-SP に最も近い位置に置かれ、最も高速にアクセスできるメモリ領域です。
-4 byte 単位で構成され、カーネル(関数)スコープの変数が配置されます。
-スレッドごとに独立するため共有することができません。
+It is the memory area that is located closest to the SP and has the fastest access.
+It consists of 4 bytes, and kernel (function) scope variables are allocated.
+Since each thread is independent, it cannot be shared.
 
 
-==== シェアードメモリ
+==== Shared memory
 
 
-SM に置かれるメモリ領域で、L1 キャッシュと合わせて管理されています。
-同じ SM 内にある SP(= スレッド) で共有することができ、かつ十分に高速にアクセスすることができます。
+A memory area that resides on the SM and is managed along with the L1 cache.
+It can be shared by SPs (= threads) in the same SM, and can be accessed fast enough.
 
 
-==== グローバルメモリ
+==== Global memory
 
 
-GPU 上ではなく DRAM 上のメモリ領域です。
-GPU 上にのプロセッサからは離れた位置にあるため参照は低速です。
-一方で、容量が大きく、すべてのスレッドからデータの読み書きが可能です。
+A memory area on DRAM, not on the GPU.
+The reference is slow because it is far from the processor on the GPU.
+On the other hand, it has a large capacity and data can be read and written from all threads.
 
 
-==== ローカルメモリ
+==== Local memory
 
 
-GPU 上ではなく DRAM 上のメモリ領域で、レジスタに収まらないデータを格納します。
-GPU 上のプロセッサからは離れた位置にあるため参照は低速です。
+The memory area on DRAM, not on the GPU, stores data that does not fit in the registers.
+The reference is slow because it is far from the processor on the GPU.
 
 
-==== テクスチャメモリ
+==== Texture memory
 
 
-テクスチャデータ専用のメモリで、グローバルメモリをテクスチャ専用に扱います。
+This is a memory dedicated to texture data, and the global memory is used only for textures.
 
 
-==== コンスタントメモリ
+==== Constant memory
 
 
-読み込み専用のメモリで、カーネル(関数)の引数や定数を保存しておくためなどに使われます。
-専用のキャッシュを持っていて、グローバルメモリよりも高速に参照できます。
+This is a read-only memory and is used to store the arguments and constants of the kernel (function).
+It has its own cache and can be referenced faster than global memory.
 
 
-=== 効率の良いスレッド数指定のヒント
+=== Tips for efficiently specifying the number of threads
+
+If the total number of threads is larger than the number of data you actually want to process,
+This is inefficient because it results in threads that are meaninglessly executed (or not processed).
+Design the total number of threads to match the number of data you want to process as much as possible.
+
+=== Limits on current specifications
 
 
-総スレッド数が実際に処理したいデータ数よりも大きい場合は、
-無意味に実行される (あるいは処理されない) スレッドが生じることになり非効率です。
-総スレッド数は可能な限り処理したいデータ数と一致させるように設計します。
-
-
-=== 現行スペック上の限界
-
-
-執筆時時点での現行スペックの上限を紹介します。最新版でない可能性があることに十分に注意してください。
-ただし、これらのような制限を考慮しつつ実装することが求められます。
+I will introduce the upper limit of the current specifications at the time of writing. Please be aware that it may not be the latest version.
+However, it is required to implement it while considering such restrictions.
 
  * Compute Shader Overview - Microsoft Developer Network
  ** @<href>{https://msdn.microsoft.com/en-us/library/ff476331(v=vs.85).aspx}
 
 
-==== スレッドとグループ数
+==== Number of threads and groups
 
 
-スレッド数やグループ数の限界については、解説中に言及しませんでした。
-これはシェーダモデル(バージョン)によって変更されるためです。
-今後も並列できる数は増えていくものと思われます。
+I did not mention the limit of the number of threads or groups in the explanation.
+This is because it changes depending on the shader model (version).
+It seems that the number that can be paralleled will increase in the future.
 
  * ShaderModel cs_4_x
- ** Z の最大値が 1
- ** X * Y * Z の最大値が 768
+ ** Z The maximum value of 1
+ ** X * Y * Z The maximum value of 768
 
  * ShaderModel cs_5_0
- ** Z の最大値が 64
- ** X * Y * Z の最大値は 1024
+ ** Z The maximum value of 64
+ ** X * Y * Z The maximum value of 1024
 
-またグループの限界は (x, y, z) でそれぞれ 65535 です。
-
-
-==== メモリ領域
+Also, the group limit is (x, y, z) And 65535 respectively.
 
 
-シェアードメモリの上限は、単位グループあたり 16 KB, 
-あるスレッドが書き込めるシェアードメモリのサイズは、単位あたり 256 byte までと制限されています。
+==== Memory area
 
 
-== 参考
+The upper limit of shared memory is per unit group 16 KB, 
+The size of shared memory that a thread can write is limited to 256 bytes per unit.
 
 
-本章でのその他の参考は以下の通りです。
+== reference
 
- * 第５回　GPUの構造 - 日本GPUコンピューティングパートナーシップ - @<href>{http://www.gdep.jp/page/view/252}
- * Windows で始める CUDA 入門 - エヌビディアジャパン - @<href>{http://on-demand.gputechconf.com/gtc/2013/jp/sessions/8001.pdf}
+
+Other references in this chapter are:
+
+ * #5 GPU structure-Japan GPU Computing Partnership-@<href>{http://www.gdep.jp/page/view/252}
+ * Windows Start with CUDA getting Started - Nvidia Japan - @<href>{http://on-demand.gputechconf.com/gtc/2013/jp/sessions/8001.pdf}
