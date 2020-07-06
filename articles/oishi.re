@@ -1,116 +1,116 @@
 
-= 群のシミュレーションのGPU実装
+= GPU implementation of flocking / swarm simulation
 
-== はじめに
-
-
-この章では、ComputeShaderを使ったBoidsアルゴリズムを用いた群のシミュレーションの実装について解説いたします。
-鳥や魚、その他の陸上動物は時として群を作ります。この群の動きには規則性と複雑性が見られ、ある種の美しさを持っており人を惹きつけてきました。
-コンピュターグラフィックスにおいては、それらの個体の振る舞いを一つ一つ人の手で制御することは現実的でなく、Boidsと呼ばれる群を作るためのアルゴリズムが考案されました。このシミュレーションアルゴリズムは、いくつかのシンプルな規則で構成されており実装も容易ですが、単純な実装では、すべての個体との位置関係を調べる必要があり、個体数が増えると、その2乗に比例して計算量が増加してしまいます。多くの個体を制御したいという場合、CPUによる実装では非常に困難です。そこで、GPUによる強力な並列計算能力を利用します。Unityには、GPUによるこのような汎用的な計算（GPGPU）を行うため、ComputeShaderというシェーダプログラムが用意されています。GPUには共有メモリと呼ばれる特殊な記憶領域が組み込まれており、ComputeShaderを用いると、このメモリを有効に活用することができます。また、UnityにはGPUインスタンシングという高度なレンダリング機能があり、任意のメッシュを大量に描画することが可能です。これらのUnityのGPUの計算能力を生かした機能を使い、多数のBoidオブジェクトを制御し描画するプログラムを紹介いたします。
+== Introduction
 
 
-== Boidsのアルゴリズム
+In this chapter, we will explain the implementation of group simulation using the Boids algorithm with ComputeShader.
+Birds, fish and other terrestrial animals sometimes swarm. The movement of this group has regularity and complexity, and it has a certain beauty and has attracted people.
+In computer graphics, it is not realistic to control the behavior of each individual one by one, and an algorithm for creating groups called Boids was devised. This simulation algorithm is composed of some simple rules and is easy to implement, but in a simple implementation, it is necessary to check the positional relationship with all individuals, and if the number of individuals increases, it becomes the square. The amount of calculation will increase in proportion. If you want to control many individuals, it is very difficult to implement with CPU. Therefore, take advantage of the powerful parallel computing power of the GPU. A shader program called ComputeShader is provided in Unity to perform such general-purpose calculation (GPGPU) by GPU. The GPU has a special storage area called shared memory that can be used effectively by using ComputeShader. In addition, Unity has an advanced rendering function called GPU instancing, and it is possible to draw large numbers of arbitrary meshes. We will introduce a program that controls and draws a large number of Boid objects using the functions that make use of the GPU's computing power.
 
 
-Boidsと呼ばれる群のシミュレーションアルゴリズムは、Craig Reynoldsによって1986年に開発され、翌年1987年のACM SIGGRAPHに「Flocks, Herds, and Schools: A Distributed Behavioral Model」というタイトルの論文として発表されました。
+== Boids algorithm
 
 
-
-Reynoldsは、群れというものは、それぞれの個体が視覚や聴覚などの知覚によって、周囲の他の個体の位置や動く方向に基づいて自身の行動を修正することにより、結果として複雑な振る舞いを生み出している、ということに着目します。
+A group of simulation algorithms called Boids was developed by Craig Reynolds in 1986 and published the following year in 1987 at ACM SIGGRAPH as a paper entitled "Flocks, Herds, and Schools: A Distributed Behavioral Model".
 
 
 
-それぞれの個体は以下の3つのシンプルな行動規則に従います。
+Reynolds is a herd that each individual modifies its own behavior based on the position and moving direction of other individuals around it by perception such as sight and hearing, resulting in complicated behavior. I will focus on that.
+
+
+
+Each individual follows three simple rules of behavior:
 
 
 ===== 1.分離（Separation）
 
 
-ある一定の距離内にある個体と密集することを避けるように動く
+Move to avoid crowding with individuals within a certain distance
 
 
 ===== 2.整列（Alignment）
 
 
-ある一定の距離内にある個体が向いている方向の平均に向かおうと動く
+An individual within a certain distance moves toward the average of the directions they are facing
 
 
 ===== 3.結合（Cohesion）
 
 
-ある一定の距離内にある個体の平均位置に動く
+Move to the average position of individuals within a certain distance
 
 
 
-//image[boids-rules][Boidsの基本的なルール]{
+//image[boids-rules][Boids basic rules]{
 //}
 
 
 
 
-これらのルールに従って、個々の動きを制御することにより、群れの動きをプログラムすることができます。
+Following these rules, you can program herd movements by controlling individual movements.
 
 
-== サンプルプログラム
+== Sample program
 
-=== リポジトリ
+=== Repository
 
 
 @<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming,https://github.com/IndieVisualLab/UnityGraphicsProgramming}
 
 
 
-本書のサンプルUnityプロジェクトにある、Assets/@<strong>{BoidsSimulationOnGPU}フォルダ内の@<strong>{BoidsSimulationOnGPU.unity}シーンデータを開いてください。
+Assets in the sample Unity project in this book/@<strong>{BoidsSimulationOnGPU}In a folder@<strong>{BoidsSimulationOnGPU.unity}Please open the scene data.
 
 
-=== 実行条件
+=== Execution condition
 
 
-本章で紹介するプログラムは、ComputeShader、GPUインスタンシングを使用しています。
-
-
-
-ComputeShaderは、以下のプラットフォームまたはAPIで動作します。
-
- * DirectX11、またはDirectX12グラフィックスAPIおよびシェーダモデル5.0GPUを搭載したWindowsおよびWindowsストアアプリ
- * MacOSとMetalグラフィックスAPIを使用したiOS
- * Vulkan APIを搭載したAndroid、Linux、Windowsプラットフォーム
- * 最新のOpenGLプラットフォーム（LinuxまたはWindowsではOpenGL 4.3、AndroidではOpenGL ES 3.1）。（MacOSXはOpenGL4.3をサポートしていないので注意してください）
- * 現段階で一般的に使用されているコンソール機（Sony PS4、Microsoft Xbox One）
+The program introduced in this chapter uses ComputeShader, GPU instancing.
 
 
 
-GPUインスタンシングは以下のプラットフォームまたはAPIで利用可能です。
+ComputeShader Works on the following platforms or APIs:
 
- * Windows上のDirectX 11およびDirectX 12
- * Windows、MacOS、Linux、iOS、Android上のOpenGLコア4.1 + / ES3.0 +
- * MacOSとiOS上のMetal
- * WindowsとAndroidのVulkan
- * プレイステーション4とXbox One
- * WebGL（WebGL 2.0 APIが必要）
-
-
-
-本サンプルプログラムでは、Graphics.DrawMeshInstacedIndirectメソッドを使用しています。そのため、Unityのバージョンは5.6以降である必要があります。
-
-
-== 実装コードの解説
-
-
-本サンプルプログラムは以下のコードで構成されます。
-
- * GPUBoids.cs - Boidsのシミュレーションを行うComputeShaderを制御するスクリプト
- * Boids.compute - Boidsのシミュレーションを行うComputeShader
- * BoidsRender.cs - Boidsを描画するシェーダを制御するC#スクリプト
- * BoidsRender.shader - GPUインスタンシングによってオブジェクトを描画するためのシェーダ
+ * Windows and Windows Store apps with DirectX11 or DirectX12 graphics API and shader model 5.0 GPU
+ * IOS with MacOS and Metal Graphics API
+ * Android, Linux, Windows platforms with Vulkan API
+ * The latest OpenGL platform (OpenGL 4.3 on Linux or Windows, OpenGL ES 3.1 on Android). (Note that MacOSX does not support OpenGL 4.3)
+ * Console machines commonly used at this stage (Sony PS4, Microsoft Xbox One)
 
 
 
-スクリプトやマテリアルリソースなどはこのようにセットします
+GPU instancing is available on the following platforms or APIs.
+
+ * DirectX 11 and DirectX 12 on Windows
+ * OpenGL Core 4.1+/ES3.0+ on Windows, MacOS, Linux, iOS, Android
+ * Metal on MacOS and iOS
+ * Vulkan for Windows and Android
+ * PlayStation 4 and Xbox One
+ * WebGL（WebGL 2.0 APIs necessary）
 
 
 
-//image[editor-boids][UnityEditor上での設定]{
+This sample program uses Graphics.DrawMeshInstacedIndirect method. Therefore, Unity version must be 5.6 or later.
+
+
+== Description of implementation code
+
+
+This sample program consists of the following code.
+
+ * GPUBoids.cs - Script that controls Compute Shader that simulates Boids
+ * Boids.compute - ComputeShader that simulates Boids
+ * BoidsRender.cs - C# script that controls the shader that draws the Boids
+ * BoidsRender.shader - A shader for drawing objects by GPU instancing
+
+
+
+Scripts, material resources etc. are set like this
+
+
+
+//image[editor-boids][UnityEditor Settings on]{
 //}
 
 
@@ -118,7 +118,7 @@ GPUインスタンシングは以下のプラットフォームまたはAPIで�
 === GPUBoids.cs
 
 
-このコードでは、Boidsシミュレーションのパラメータや、GPU上での計算のために必要なバッファや計算命令を記述したComputeShaderの管理などを行います。
+This code manages the Boids simulation parameters, ComputeShader that describes the buffers and calculation instructions required for calculation on the GPU.
 
 
 //emlist[GPUBoids.cs][csharp]{
@@ -130,81 +130,81 @@ using System.Runtime.InteropServices;
 
 public class GPUBoids : MonoBehaviour
 {
-    // Boidデータの構造体
+    // Boid data structure
     [System.Serializable]
     struct BoidData 
     {
         public Vector3 Velocity; // 速度
         public Vector3 Position; // 位置
     }
-    // スレッドグループのスレッドのサイズ
+    // Thread group thread size
     const int SIMULATION_BLOCK_SIZE = 256;
 
     #region Boids Parameters
-    // 最大オブジェクト数
+    // Maximum number of objects
     [Range(256, 32768)]
     public int MaxObjectNum = 16384;
 
-    // 結合を適用する他の個体との半径
+    // Radius with other individuals to which the bond is applied
     public float CohesionNeighborhoodRadius  = 2.0f;
-    // 整列を適用する他の個体との半径
+    // Radius of alignment with other individuals
     public float AlignmentNeighborhoodRadius = 2.0f;
-    // 分離を適用する他の個体との半径
+    // Radius to other individuals to which separation is applied
     public float SeparateNeighborhoodRadius  = 1.0f;
 
-    // 速度の最大値
+    // Maximum speed
     public float MaxSpeed        = 5.0f;
-    // 操舵力の最大値
+    // Maximum steering force
     public float MaxSteerForce   = 0.5f;
 
-    // 結合する力の重み
+    // Weight of force to combine
     public float CohesionWeight  = 1.0f;
-    // 整列する力の重み
+    // Force weights to align
     public float AlignmentWeight = 1.0f;
-    // 分離する力の重み
+    // Separating force weights
     public float SeparateWeight  = 3.0f;
 
-    // 壁を避ける力の重み
+    // Weight of power to avoid walls
     public float AvoidWallWeight = 10.0f;
 
-    // 壁の中心座標   
+    // Center coordinates of wall
     public Vector3 WallCenter = Vector3.zero;
-    // 壁のサイズ
+    // Wall size
     public Vector3 WallSize = new Vector3(32.0f, 32.0f, 32.0f);
     #endregion
 
     #region Built-in Resources
-    // Boidsシミュレーションを行うComputeShaderの参照
+    // Reference of Compute Shader for Boids simulation
     public ComputeShader BoidsCS;
     #endregion
 
     #region Private Resources
-    // Boidの操舵力（Force）を格納したバッファ
+    // A buffer that stores the steering force (Force) of the Boid
     ComputeBuffer _boidForceBuffer;
-    // Boidの基本データ（速度, 位置）を格納したバッファ
+    // Buffer that stores basic data of Boid (speed, position)
     ComputeBuffer _boidDataBuffer;
     #endregion
 
     #region Accessors
-    // Boidの基本データを格納したバッファを取得
+    // Get the buffer that stores the basic data of Boid
     public ComputeBuffer GetBoidDataBuffer()
     {
         return this._boidDataBuffer != null ? this._boidDataBuffer : null;
     }
 
-    // オブジェクト数を取得
+    // Get number of objects
     public int GetMaxObjectNum()
     {
         return this.MaxObjectNum;
     }
 
-    // シミュレーション領域の中心座標を返す
+    // Returns the center coordinates of the simulation area
     public Vector3 GetSimulationAreaCenter()
     {
         return this.WallCenter;
     }
 
-    // シミュレーション領域のボックスのサイズを返す
+    // Returns the size of the box in the simulation area
     public Vector3 GetSimulationAreaSize()
     {
         return this.WallSize;
@@ -214,41 +214,41 @@ public class GPUBoids : MonoBehaviour
     #region MonoBehaviour Functions
     void Start()
     {
-        // バッファを初期化
+        // Initialize buffer
         InitBuffer();
     }
 
     void Update()
     {
-        // シミュレーション
+        // just calls run simulation
         Simulation();
     }
 
     void OnDestroy()
     {
-        // バッファを破棄
+        // Discard buffer
         ReleaseBuffer(); 
     }
 
     void OnDrawGizmos()
     {
-        // デバッグとしてシミュレーション領域をワイヤーフレームで描画
+        // Drawing the simulation area in wireframe for debugging
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireCube(WallCenter, WallSize);
     }
     #endregion
 
     #region Private Functions
-    // バッファを初期化
+    // Initialize buffer
     void InitBuffer()
     {
-        // バッファを初期化
+        // Initialize buffer
         _boidDataBuffer  = new ComputeBuffer(MaxObjectNum, 
             Marshal.SizeOf(typeof(BoidData)));        
         _boidForceBuffer = new ComputeBuffer(MaxObjectNum, 
             Marshal.SizeOf(typeof(Vector3)));
 
-        // Boidデータ, Forceバッファを初期化
+        // Boid Initialize data, Force buffer
         var forceArr = new Vector3[MaxObjectNum];
         var boidDataArr = new BoidData[MaxObjectNum];
         for (var i = 0; i < MaxObjectNum; i++)
@@ -263,17 +263,17 @@ public class GPUBoids : MonoBehaviour
         boidDataArr = null;
     }
 
-    // シミュレーション
+    // simulation
     void Simulation()
     {
         ComputeShader cs = BoidsCS;
         int id = -1;
 
-        // スレッドグループの数を求める
+        // Find the number of thread groups
         int threadGroupSize = Mathf.CeilToInt(MaxObjectNum 
             / SIMULATION_BLOCK_SIZE);
 
-        // 操舵力を計算
+        // Calculate steering force
         id = cs.FindKernel("ForceCS"); // カーネルIDを取得
         cs.SetInt("_MaxBoidObjectNum", MaxObjectNum);
         cs.SetFloat("_CohesionNeighborhoodRadius",  
@@ -294,7 +294,7 @@ public class GPUBoids : MonoBehaviour
         cs.SetBuffer(id, "_BoidForceBufferWrite", _boidForceBuffer);
         cs.Dispatch(id, threadGroupSize, 1, 1); // ComputeShaderを実行
 
-        // 操舵力から、速度と位置を計算
+        // Calculate speed and position from steering force
         id = cs.FindKernel("IntegrateCS"); // カーネルIDを取得
         cs.SetFloat("_DeltaTime", Time.deltaTime);
         cs.SetBuffer(id, "_BoidForceBufferRead", _boidForceBuffer);
@@ -302,7 +302,7 @@ public class GPUBoids : MonoBehaviour
         cs.Dispatch(id, threadGroupSize, 1, 1); // ComputeShaderを実行
     }
 
-    // バッファを解放
+    // Free buffer
     void ReleaseBuffer()
     {
         if (_boidDataBuffer != null)
@@ -322,95 +322,94 @@ public class GPUBoids : MonoBehaviour
 
 //}
 
-===== ComputeBufferの初期化
+===== ComputeBuffer initialization
 
 
-InitBuffer関数では、GPU上で計算を行う際に使用するバッファを宣言しています。
-GPU上で計算するためのデータを格納するバッファとして、ComputeBufferというクラスを使用します。ComputeBufferはComputeShaderのためにデータを格納するデータバッファです。C#スクリプトからGPU上のメモリバッファに対して読み込みや書き込みができるようになります。初期化時の引数には、バッファの要素の数と、要素1つのサイズ（バイト数）を渡します。Marshal.SizeOf()メソッドを使用することで、型のサイズ（バイト数）を取得することができます。ComputeBufferでは、SetData()を用いて、任意の構造体の配列の値をセットすることができます。
+The InitBuffer function declares the buffer used when performing calculations on the GPU.
+We will use a class called ComputeBuffer as a buffer to store data for calculation on the GPU. ComputeBuffer is a data buffer that stores data for ComputeShader. You can read and write to the memory buffer on GPU from C# script. Pass the number of elements in the buffer and the size (number of bytes) of each element in the arguments at initialization. You can get the size (number of bytes) of a type by using the Marshal.SizeOf() method. In ComputeBuffer, you can use SetData() to set the array value of an arbitrary structure.
+
+===== Execution of the function described in ComputeShader
 
 
-===== ComputeShaderに記述した関数の実行
-
-
-Simulation関数では、ComputeShaderに必要なパラメータを渡し、計算命令を発行します。
-
-
-
-ComputeShaderに記述された、実際にGPUに計算をさせる関数はカーネルと呼ばれます。このカーネルの実行単位をスレッドと言い、GPUアーキテクチャに即した並列計算処理を行うために、任意の数まとめてグループとして扱い、それらはスレッドグループと呼ばれます。
-このスレッドの数とスレッドグループ数の積が、Boidオブジェクトの個体数と同じかそれを超えるように設定します。
+In the Simulation function, pass the necessary parameters to ComputeShader and issue the calculation instruction.
 
 
 
-カーネルは、ComputeShaderスクリプト内で #pragma kernelディレクティブを用いて指定されます。これにはそれぞれIDが割り当てられており、C#スクリプトからはFindKernelメソッドを用いることで、このIDを取得することができます。
+The function described in ComputeShader that actually causes the GPU to perform calculations is called the kernel. The execution unit of this kernel is called a thread, and in order to perform parallel calculation processing that conforms to the GPU architecture, any number of them are treated as a group, and they are called a thread group.
+Set the product of the number of threads and the number of thread groups to be equal to or greater than the number of Boid object individuals.
 
 
 
-SetFloatメソッド、SetVectorメソッド、SetBufferメソッドなどを使用し、シミュレーションに必要なパラメータやバッファをComputeShaderに渡します。バッファやテクスチャをセットするときにはカーネルIDが必要になります。
+The kernel is specified in the ComputeShader script using the #pragma kernel directive. Each ID is assigned to this, and this ID can be obtained from the C# script by using the FindKernel method.
 
 
 
-Dispatchメソッドを実行することで、ComputeShaderに定義したカーネルをGPUで計算処理を行うように命令を発行します。引数には、カーネルIDとスレッドグループの数を指定します。
+Use the SetFloat method, SetVector method, SetBuffer method, etc. to pass parameters and buffers required for simulation to ComputeShader. You need the kernel ID when setting buffers and textures.
+
+
+
+By executing the Dispatch method, a command is issued so that the kernel defined in ComputeShader will be calculated by the GPU. In the argument, specify the kernel ID and the number of thread groups.
 
 
 === Boids.compute
 
 
-GPUへの計算命令を記述します。カーネルは2つで、1つは操舵力を計算するもの、もう1つは、その力を適用させ速度や位置を更新するものです。
+Write the calculation instruction to the GPU. There are two kernels, one to calculate the steering force and the other to apply that force and update the speed and position.
 
 
 //emlist[Boids.compute][computeshader]{
 
-// カーネル関数を指定
+// Specify kernel function
 #pragma kernel ForceCS      // 操舵力を計算
 #pragma kernel IntegrateCS  // 速度, 位置を計算
 
-// Boidデータの構造体
+// Boid data structure
 struct BoidData
 {
     float3 velocity; // 速度
     float3 position; // 位置
 };
 
-// スレッドグループのスレッドのサイズ
+// Thread group thread size
 #define SIMULATION_BLOCK_SIZE 256
 
-// Boidデータのバッファ（読み取り用）
+// Boid data buffer (for reading)
 StructuredBuffer<BoidData>   _BoidDataBufferRead;
-// Boidデータのバッファ（読み取り, 書き込み用）
+// Boid data buffer (for reading and writing)
 RWStructuredBuffer<BoidData> _BoidDataBufferWrite;
-// Boidの操舵力のバッファ（読み取り用）
+// Boid steering force buffer (for reading)
 StructuredBuffer<float3>     _BoidForceBufferRead;
-// Boidの操舵力のバッファ（読み取り, 書き込み用）
+// Boid steering force buffer (for reading and writing)
 RWStructuredBuffer<float3>   _BoidForceBufferWrite;
 
 int _MaxBoidObjectNum; // Boidオブジェクト数
 
-float _DeltaTime;      // 前フレームから経過した時間
+float _DeltaTime;      // Time elapsed from the previous frame
 
-float _SeparateNeighborhoodRadius;  // 分離を適用する他の個体との距離
-float _AlignmentNeighborhoodRadius; // 整列を適用する他の個体との距離
-float _CohesionNeighborhoodRadius;  // 結合を適用する他の個体との距離
+float _SeparateNeighborhoodRadius;  // Distance to other individuals to which the separation applies
+float _AlignmentNeighborhoodRadius; // Distance to other individuals to which the alignment applies
+float _CohesionNeighborhoodRadius;  // Distance from other individuals to which the bond is applied
 
-float _MaxSpeed;        // 速度の最大値
-float _MaxSteerForce;   // 操舵する力の最大値
+float _MaxSpeed;        // Maximum speed
+float _MaxSteerForce;   // Maximum steering force
 
-float _SeparateWeight;  // 分離適用時の重み
-float _AlignmentWeight; // 整列適用時の重み
-float _CohesionWeight;  // 結合適用時の重み
+float _SeparateWeight;  // Weight when applying separation
+float _AlignmentWeight; // Weight when applying alignment
+float _CohesionWeight;  // Weight when applying join
 
-float4 _WallCenter;      // 壁の中心座標
-float4 _WallSize;        // 壁のサイズ
-float  _AvoidWallWeight; // 壁を避ける強さの重み
+float4 _WallCenter;      // Center coordinates of wall
+float4 _WallSize;        // Wall size
+float  _AvoidWallWeight; // Weight of strength to avoid walls
 
 
-// ベクトルの大きさを制限する
+// Limit vector magnitude
 float3 limit(float3 vec, float max)
 {
     float length = sqrt(dot(vec, vec)); // 大きさ
     return (length > max && length > 0) ? vec.xyz * (max / length) : vec.xyz;
 }
 
-// 壁に当たった時に逆向きの力を返す
+// Returns the opposite force when it hits the wall
 float3 avoidWall(float3 position)
 {
     float3 wc = _WallCenter.xyz;
@@ -431,208 +430,206 @@ float3 avoidWall(float3 position)
     return acc;
 }
 
-// シェアードメモリ Boidデータ格納用
+// Shared memory Boid data storage
 groupshared BoidData boid_data[SIMULATION_BLOCK_SIZE];
 
-// 操舵力の計算用カーネル関数
+// Steering force calculation kernel function
 [numthreads(SIMULATION_BLOCK_SIZE, 1, 1)]
 void ForceCS
 (
-    uint3 DTid : SV_DispatchThreadID, // スレッド全体で固有のID
-    uint3 Gid : SV_GroupID, // グループのID
-    uint3 GTid : SV_GroupThreadID, // グループ内のスレッドID
-    uint  GI : SV_GroupIndex // SV_GroupThreadIDを一次元にしたもの 0-255
+    uint3 DTid : SV_DispatchThreadID, // Unique ID for the entire thread
+    uint3 Gid : SV_GroupID, // Group ID
+    uint3 GTid : SV_GroupThreadID, // Thread ID within group
+    uint  GI : SV_GroupIndex // One-dimensional SV_GroupThreadID 0-255
 )
 {
-    const unsigned int P_ID = DTid.x; // 自身のID
-    float3 P_position = _BoidDataBufferRead[P_ID].position; // 自身の位置
-    float3 P_velocity = _BoidDataBufferRead[P_ID].velocity; // 自身の速度
+    const unsigned int P_ID = DTid.x; // Own ID
+    float3 P_position = _BoidDataBufferRead[P_ID].position; // Own position
+    float3 P_velocity = _BoidDataBufferRead[P_ID].velocity; // Own speed
 
-    float3 force = float3(0, 0, 0); // 操舵力を初期化
+    float3 force = float3(0, 0, 0); // Initialize steering force
 
-    float3 sepPosSum = float3(0, 0, 0); // 分離計算用 位置加算変数
-    int sepCount = 0; // 分離のために計算した他の個体の数のカウント用変数
+    float3 sepPosSum = float3(0, 0, 0); // Position addition variable for separation calculation
+    int sepCount = 0; // Variable for counting the number of other individuals calculated for separation
 
-    float3 aliVelSum = float3(0, 0, 0); // 整列計算用 速度加算変数
-    int aliCount = 0; // 整列のために計算した他の個体の数のカウント用変数
+    float3 aliVelSum = float3(0, 0, 0); // Speed ​​addition variable for alignment calculation
+    int aliCount = 0; // A variable for counting the number of other individuals calculated for alignment
 
-    float3 cohPosSum = float3(0, 0, 0); // 結合計算用 位置加算変数
-    int cohCount = 0; // 結合のために計算した他の個体の数のカウント用変数
+    float3 cohPosSum = float3(0, 0, 0); // Position addition variable for join calculation
+    int cohCount = 0; // A variable for counting the number of other individuals calculated for the combination
 
-    // SIMULATION_BLOCK_SIZE（グループスレッド数）ごとの実行 (グループ数分実行)
+    // SIMULATION_BLOCK_SIZE（Execution for each group thread number) (Run for the number of groups)
     [loop]
     for (uint N_block_ID = 0; N_block_ID < (uint)_MaxBoidObjectNum;
         N_block_ID += SIMULATION_BLOCK_SIZE)
     {
-        // SIMULATION_BLOCK_SIZE分のBoidデータを、シェアードメモリに格納
+        // Boid data for SIMULATION_BLOCK_SIZE is stored in shared memory
         boid_data[GI] = _BoidDataBufferRead[N_block_ID + GI];
 
-        // すべてのグループ共有アクセスが完了し、
-        // グループ内のすべてのスレッドがこの呼び出しに到達するまで、
-        // グループ内のすべてのスレッドの実行をブロックする
+        // All group share access is complete,
+        // Until all threads in the group reach this call
+        // Block execution of all threads in group
         GroupMemoryBarrierWithGroupSync();
 
-        // 他の個体との計算
+        // Calculation with other individuals
         for (int N_tile_ID = 0; N_tile_ID < SIMULATION_BLOCK_SIZE; 
             N_tile_ID++)
         {
-            // 他の個体の位置
+            // Location of other individuals
             float3 N_position = boid_data[N_tile_ID].position;
-            // 他の個体の速度
+            // The speed of other individuals
             float3 N_velocity = boid_data[N_tile_ID].velocity;
 
-            // 自身と他の個体の位置の差
+            // Difference in position between yourself and other individuals
             float3 diff = P_position - N_position;
-            // 自身と他の個体の位置の距離
+            // Distance between yourself and other individuals
             float  dist = sqrt(dot(diff, diff));   
 
-            // --- 分離（Separation） ---
+            // --- Separate（Separation） ---
             if (dist > 0.0 && dist <= _SeparateNeighborhoodRadius)
             {
-                // 他の個体の位置から自身へ向かうベクトル
+                // Vector from other individuals' positions to themselves
                 float3 repulse = normalize(P_position - N_position);
-                // 自身と他の個体の位置の距離で割る（距離が遠ければ影響を小さく）
+                // Divide by the distance between itself and the position of another individual (the longer the distance, the smaller the effect)
                 repulse /= dist;
-                sepPosSum += repulse; // 加算
-                sepCount++;           // 個体数カウント
+                sepPosSum += repulse; // Addition
+                sepCount++;           // Population count
             }
 
-            // --- 整列（Alignment） ---
+            // --- Alignment（Alignment） ---
             if (dist > 0.0 && dist <= _AlignmentNeighborhoodRadius)
             {
                 aliVelSum += N_velocity; // 加算
                 aliCount++;              // 個体数カウント
             }
 
-            // --- 結合（Cohesion） ---
+            // --- Combine（Cohesion） ---
             if (dist > 0.0 && dist <= _CohesionNeighborhoodRadius)
             {
-                cohPosSum += N_position; // 加算
-                cohCount++;              // 個体数カウント 
+                cohPosSum += N_position; // Addition
+                cohCount++;              // Population count
             }
         }
         GroupMemoryBarrierWithGroupSync();
     }
 
-    // 操舵力（分離）
+    // Steering force (separation)
     float3 sepSteer = (float3)0.0;
     if (sepCount > 0)
     {
-        sepSteer = sepPosSum / (float)sepCount;     // 平均を求める
-        sepSteer = normalize(sepSteer) * _MaxSpeed; // 最大速度に調整
-        sepSteer = sepSteer - P_velocity;           // 操舵力を計算
-        sepSteer = limit(sepSteer, _MaxSteerForce); // 操舵力を制限
+        sepSteer = sepPosSum / (float)sepCount;     // Find the average
+        sepSteer = normalize(sepSteer) * _MaxSpeed; // Adjust to maximum speed
+        sepSteer = sepSteer - P_velocity;           // Calculate steering force
+        sepSteer = limit(sepSteer, _MaxSteerForce); // Limit steering force
     }
 
     // 操舵力（整列）
     float3 aliSteer = (float3)0.0;
     if (aliCount > 0)
     {
-        aliSteer = aliVelSum / (float)aliCount; // 近い個体の速度の平均を求める
-        aliSteer = normalize(aliSteer) * _MaxSpeed; // 最大速度に調整
-        aliSteer = aliSteer - P_velocity;           // 操舵力を計算
-        aliSteer = limit(aliSteer, _MaxSteerForce); // 操舵力を制限
+        aliSteer = aliVelSum / (float)aliCount; // Find the average velocity of close individuals
+        aliSteer = normalize(aliSteer) * _MaxSpeed; // Adjust to maximum speed
+        aliSteer = aliSteer - P_velocity;           // Calculate steering force
+        aliSteer = limit(aliSteer, _MaxSteerForce); // Limit steering force
     }
-    // 操舵力（結合）
+    // Steering power (combined)
     float3 cohSteer = (float3)0.0;
     if (cohCount > 0)
     {
-        // / 近い個体の位置の平均を求める
+        // / Find the average of the positions of close individuals
         cohPosSum = cohPosSum / (float)cohCount;
-        cohSteer = cohPosSum - P_position; // 平均位置方向へのベクトルを求める
-        cohSteer = normalize(cohSteer) * _MaxSpeed; // 最大速度に調整
-        cohSteer = cohSteer - P_velocity;           // 操舵力を計算
-        cohSteer = limit(cohSteer, _MaxSteerForce); // 操舵力を制限
+        cohSteer = cohPosSum - P_position; // Find vector toward average position
+        cohSteer = normalize(cohSteer) * _MaxSpeed; // Adjust to maximum speed
+        cohSteer = cohSteer - P_velocity;           // Calculate steering force
+        cohSteer = limit(cohSteer, _MaxSteerForce); // Limit steering force
     }
-    force += aliSteer * _AlignmentWeight; // 操舵力に整列する力を加える
-    force += cohSteer * _CohesionWeight;  // 操舵力に結合する力を加える
-    force += sepSteer * _SeparateWeight;  // 操舵力に分離する力を加える
+    force += aliSteer * _AlignmentWeight; // Add force to align with steering force
+    force += cohSteer * _CohesionWeight;  // Add force to the steering force
+    force += sepSteer * _SeparateWeight;  // Add a separating force to the steering force
 
-    _BoidForceBufferWrite[P_ID] = force; // 書き込み
+    _BoidForceBufferWrite[P_ID] = force; // writing
 }
 
-// 速度, 位置計算用カーネル関数
+// Kernel function for velocity and position calculation
 [numthreads(SIMULATION_BLOCK_SIZE, 1, 1)]
 void IntegrateCS
 (
-    uint3 DTid : SV_DispatchThreadID // スレッド全体で固有のID
+    uint3 DTid : SV_DispatchThreadID // Unique ID for the entire thread
 )
 {
-    const unsigned int P_ID = DTid.x; // インデックスを取得
+    const unsigned int P_ID = DTid.x; // Get index
 
-    BoidData b = _BoidDataBufferWrite[P_ID]; // 現在のBoidデータを読み込む
-    float3 force = _BoidForceBufferRead[P_ID]; // 操舵力を読み込む
+    BoidData b = _BoidDataBufferWrite[P_ID]; // Read current Boid data
+    float3 force = _BoidForceBufferRead[P_ID]; // Read steering force
 
-    // 壁に近づいたら反発する力を与える
+    // Gives power to repel when approaching a wall
     force += avoidWall(b.position) * _AvoidWallWeight; 
 
-    b.velocity += force * _DeltaTime; // 操舵力を速度に適用
-    b.velocity = limit(b.velocity, _MaxSpeed); // 速度を制限
-    b.position += b.velocity * _DeltaTime; // 位置を更新
+    b.velocity += force * _DeltaTime; // Apply steering force to speed
+    b.velocity = limit(b.velocity, _MaxSpeed); // Speed ​​limit
+    b.position += b.velocity * _DeltaTime; // Update position
 
-    _BoidDataBufferWrite[P_ID] = b; // 計算結果を書き込む
+    _BoidDataBufferWrite[P_ID] = b; // Write the calculation result
 }
 
 //}
 
-==== 操舵力の計算
+==== Steering force calculation
 
 
-ForceCSカーネルでは、操舵力の計算を行います。
+The ForceCS kernel calculates steering force.
 
 
-===== 共有メモリの活用
+===== Utilization of shared memory
 
 
-groupshared という記憶域修飾子をつけられた変数は共有メモリ（shared memory）に書き込まれるようになります。
-共有メモリは多くのデータ量を書き込むことはできませんが、レジスタに近く配置されており非常に高速にアクセスができます。
-この共有メモリはスレッドグループ内で共有することができます。SIMULATION_BLOCK_SIZE分の他の個体の情報をまとめて共有メモリに書き込んでおいて、同一スレッドグループ内で高速に読みこむことができるようにすることで、他の個体との位置関係を考慮した計算を効率的に行っていきます。
+Variables with the storage modifier groupshared will now be written to shared memory.
+Although the shared memory cannot write a large amount of data, it is located close to the registers and can be accessed very fast.
+This shared memory can be shared within a thread group. SIMULATION_BLOCK_SIZE's worth of information about other individuals can be collectively written to the shared memory so that they can be read at high speed within the same thread group, making efficient calculation considering the positional relationship with other individuals. I will go on a regular basis.
 
 
 
-//image[gpu-architecture][GPUの基本的なアーキテクチャ]{
+//image[gpu-architecture][GPU basic architecture]{
 //}
 
 
 
 ====== GroupMemoryBarrierWithGroupSync()
 
+When accessing the data written in the shared memory, it is necessary to write the GroupMemoryBarrierWithGroupSync() method to synchronize the processing of all threads in the thread group.
+GroupMemoryBarrierWithGroupSync() blocks execution of all threads in the thread group until all threads in the group reach this call. This will ensure that all threads in the thread group have properly initialized the boid_data array.
 
-共有メモリに書き込まれたデータにアクセスする時は、GroupMemoryBarrierWithGroupSync()メソッドを記述し、スレッドグループ内のすべてのスレッドの処理の同期をとっておく必要があります。
-GroupMemoryBarrierWithGroupSync()は、スレッドグループ内のすべてのスレッドが、この呼び出しに到達するまで、グループ内のすべてのスレッドの実行をブロックします。これにより、スレッドグループ内のすべてのスレッドでboid_data配列の初期化が適切に終わっていることが保証されるようになります。
+===== Calculate steering force by distance from other individuals
 
-
-===== 他の個体との距離によって操舵力を計算
-
-====== 分離（Separation）
+====== Separation
 
 
-指定した距離より近い個体があった場合、その個体の位置から自身の位置へ向かうベクトルを求め、正規化します。そのベクトルを、距離の値で割ることで、近ければより避けるように、遠ければ小さく避けるように重みをつけ他の個体と衝突しないようにする力として加算していきます。全ての個体との計算が終わったら、その値を用いて、現在の速度との関係から操舵力を求めます。
+If there is an individual closer than the specified distance, the vector from that individual's position to its own position is calculated and normalized. By dividing the vector by the distance value, it is weighted so that it is more avoided when it is close and smaller when it is far, and it is added as a force to prevent collision with other individuals. When the calculation with all the individuals is completed, use that value to calculate the steering force from the relationship with the current speed.
 
 
-====== 整列（Alignment）
+====== Alignment
 
 
-指定した距離より近い個体があった場合、その個体の速度（Velocity）を足し合わせていき、同時にその個体数をカウントしていき、それらの値で、近い個体の速度（つまり向いている方向）の平均を求めます。全ての個体との計算が終わったら、その値を用いて、現在の速度との関係から操舵力を求めます。
+If there is an individual closer than the specified distance, the velocity (Velocity) of that individual is added together, and at the same time, the number of individuals is counted, and with those values, the velocity of the closer individual (that is, the direction in which it is facing) Find the average of. When the calculation with all the individuals is completed, use that value to calculate the steering force from the relationship with the current speed.
 
 
-====== 結合（Cohesion）
+====== Cohesion
 
 
-指定した距離より近い個体があった場合、その個体の位置を加算していき、同時にその個体数をカウントしていき、それらの値で、近い個体の位置の平均（重心）を求めます。さらに、そこへ向かうベクトルを求め、現在の速度との関係から操舵力を求めます。
+If there is an individual closer than the specified distance, the position of that individual is added, and at the same time, the number of that individual is counted, and the average (center of gravity) of the positions of close individuals is calculated from these values. In addition, the vector going to it is calculated, and the steering force is calculated from the relationship with the current speed.
 
 
-===== 個々のBoidの速度と位置の更新
+===== Update velocity and position of individual Boids
 
 
-IntegrateCSカーネルでは、ForceCS()で求めた操舵力を元に、Boidの速度と位置を更新します。
-AvoidWallでは、指定したエリアの外に出ようとした場合、逆向きの力を与え領域の内部に留まるようにしています。
+The IntegrateCS kernel updates the speed and position of the Boid based on the steering force obtained by ForceCS().
+AvoidWall tries to stay outside the specified area by applying a reverse force when trying to get out of the specified area.
 
 
 === BoidsRender.cs
 
 
-このスクリプトでは、Boidsシミュレーションで得られた結果を、指定したメッシュで描画することを行います。
+In this script, the result obtained by the Boids simulation is drawn with the specified mesh.
 
 
 //emlist[BoidsRender.cs][csharp]{
@@ -641,53 +638,53 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 同GameObjectに、GPUBoidsコンポーネントがアタッチされていることを保証
+// Guaranteed that the GPU Boids component is attached to the same GameObject
 [RequireComponent(typeof(GPUBoids))]
 public class BoidsRender : MonoBehaviour
 {
     #region Paremeters
-    // 描画するBoidsオブジェクトのスケール
+    // Scale of Boids object to draw
     public Vector3 ObjectScale = new Vector3(0.1f, 0.2f, 0.5f);
     #endregion
 
     #region Script References
-    // GPUBoidsスクリプトの参照
+    // GPUBoids script reference
     public GPUBoids GPUBoidsScript;
     #endregion
 
     #region Built-in Resources
-    // 描画するメッシュの参照
+    // Reference to the mesh to draw
     public Mesh InstanceMesh;
-    // 描画のためのマテリアルの参照
+    // Material reference for drawing
     public Material InstanceRenderMaterial;
     #endregion
 
     #region Private Variables
-    // GPUインスタンシングのための引数（ComputeBufferへの転送用）
-    // インスタンスあたりのインデックス数, インスタンス数, 
-    // 開始インデックス位置, ベース頂点位置, インスタンスの開始位置
+    // Argument for GPU instancing (for transfer to ComputeBuffer)
+    // Number of indexes per instance, number of instances,
+    // Start index position, base vertex position, instance start position
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
-    // GPUインスタンシングのための引数バッファ
+    // Argument buffer for GPU instancing
     ComputeBuffer argsBuffer;
     #endregion
 
     #region MonoBehaviour Functions
     void Start ()
     {
-        // 引数バッファを初期化
+        // Initialize the argument buffer
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), 
             ComputeBufferType.IndirectArguments);
     }
 
     void Update ()
     {
-        // メッシュをインスタンシング
+        // Instantiating mesh
         RenderInstancedMesh();
     }
 
     void OnDisable()
     {
-        // 引数バッファを解放
+        // Free argument buffer
         if (argsBuffer != null)
             argsBuffer.Release();
         argsBuffer = null;
@@ -697,40 +694,40 @@ public class BoidsRender : MonoBehaviour
     #region Private Functions
     void RenderInstancedMesh()
     {
-        // 描画用マテリアルがNull, または, GPUBoidsスクリプトがNull,
-        // またはGPUインスタンシングがサポートされていなければ, 処理をしない
+        // The drawing material is Null, or the GPUBoids script is Null,
+        // Or if GPU instancing is not supported, do nothing
         if (InstanceRenderMaterial == null || GPUBoidsScript == null || 
             !SystemInfo.supportsInstancing)
             return;
 
-        // 指定したメッシュのインデックス数を取得
+        // Get the index number of the specified mesh
         uint numIndices = (InstanceMesh != null) ? 
             (uint)InstanceMesh.GetIndexCount(0) : 0;
-        // メッシュのインデックス数をセット
+        // Set the number of mesh indexes
         args[0] = numIndices; 
-        // インスタンス数をセット
+        // Set the number of instances
         args[1] = (uint)GPUBoidsScript.GetMaxObjectNum(); 
-        argsBuffer.SetData(args); // バッファにセット
+        argsBuffer.SetData(args); // Set in buffer
 
-        // Boidデータを格納したバッファをマテリアルにセット
+        // Set the buffer that stores the Boid data in the material
         InstanceRenderMaterial.SetBuffer("_BoidDataBuffer", 
             GPUBoidsScript.GetBoidDataBuffer());
-        // Boidオブジェクトスケールをセット
+        // Boid object scale set
         InstanceRenderMaterial.SetVector("_ObjectScale", ObjectScale);
-        // 境界領域を定義
+        // Bounding area defined
         var bounds = new Bounds
         (
             GPUBoidsScript.GetSimulationAreaCenter(), // 中心
             GPUBoidsScript.GetSimulationAreaSize()    // サイズ
         );
-        // メッシュをGPUインスタンシングして描画
+        // GPU instancing and drawing mesh
         Graphics.DrawMeshInstancedIndirect
         (
-            InstanceMesh,           // インスタンシングするメッシュ
-            0,                      // submeshのインデックス
-            InstanceRenderMaterial, // 描画を行うマテリアル 
-            bounds,                 // 境界領域
-            argsBuffer              // GPUインスタンシングのための引数のバッファ 
+            InstanceMesh,           // The mesh to instantiate
+            0,                      // submesh index
+            InstanceRenderMaterial, // Material to draw
+            bounds,                 // Realm
+            argsBuffer              // Argument buffer for GPU instancing
         );
     }
     #endregion
@@ -738,25 +735,25 @@ public class BoidsRender : MonoBehaviour
 
 //}
 
-==== GPUインスタンシング
+==== GPU instancing
 
 
-大量の同一のMeshを描画したい時、一つ一つGameObjectを生成するのでは、ドローコールが上がり描画負荷が増大していきます。また、ComputeShaderでの計算結果をCPUメモリに転送するコストが高く、高速に処理を行いたい場合、GPUでの計算結果をそのまま描画用シェーダに渡し描画処理をさせることが必要です。UnityのGPUインスタンシングを使えば、不要なGameObjectの生成を行うことなく、大量の同一のMeshを少ないドローコールで高速に描画することができます。
+If you want to draw a large number of identical meshes, creating a GameObject one by one will increase the draw call and the drawing load will increase. In addition, the cost of transferring the calculation result of ComputeShader to CPU memory is high, and if you want to perform high-speed processing, it is necessary to pass the calculation result of GPU to the shader for drawing as it is and perform drawing processing. If you use Unity's GPU instancing, you can draw a large number of same meshes at high speed with few draw calls without generating unnecessary GameObjects.
 
 
-====== Graphics.DrawMeshInstancedIndirect()メソッド
+====== Graphics.DrawMeshInstancedIndirect()
 
 
-このスクリプトでは、Graphics.DrawMeshInstancedIndirectメソッドを用いてGPUインスタンシングによるメッシュ描画を行います。
-このメソッドでは、メッシュのインデックス数やインスタンス数をComputeBufferとして渡すことができます。GPUからすべてのインスタンスデータを読み込みたい場合に便利です。
-
-
-
-Start()では、このGPUインスタンシングのための引数バッファを初期化しています。初期化時のコンストラクタの3つ目の引数には@<b>{ComputeBufferType.IndirectArguments}を指定します.
+This script uses the Graphics.DrawMeshInstancedIndirect method to draw the mesh by GPU instancing.
+In this method, you can pass the number of mesh indexes and the number of instances as ComputeBuffer. This is useful if you want to read all instance data from the GPU.
 
 
 
-RenderInstancedMesh()では、GPUインスタンシングによるメッシュ描画を実行しています。描画のためのマテリアルInstanceRenderMaterialに、SetBufferメソッドで、Boidsシミュレーションによって得られたBoidのデータ（速度、位置の配列）を渡しています。
+In Start(), the argument buffer for this GPU instancing is initialized. Specify @<b>{ComputeBufferType.IndirectArguments} as the third argument of the constructor at initialization.
+
+
+
+RenderInstancedMesh() executes mesh drawing by GPU instancing. Boid data (velocity, position array) obtained by the Boids simulation is passed to the material for rendering InstanceRenderMaterial by the SetBuffer method.
 
 
 
@@ -764,13 +761,13 @@ Graphics.DrawMeshInstancedIndrectメソッドには、インスタンシング�
 
 
 
-このメソッドは通常Update()内で呼ばれるようにします。
+This method should normally be called within Update().
 
 
 === BoidsRender.shader
 
 
-Graphics.DrawMeshInstancedIndrectメソッドに対応した描画用のシェーダです。
+A shader for drawing corresponding to the Graphics.DrawMeshInstancedIndrect method.
 
 
 //emlist[BoidsRender.shader][hlsl]{
@@ -797,7 +794,7 @@ Shader "Hidden/GPUBoids/BoidsRender"
         {
             float2 uv_MainTex;
         };
-        // Boidの構造体
+        // Boid structure
         struct BoidData
         {
             float3 velocity; // 速度
@@ -805,19 +802,19 @@ Shader "Hidden/GPUBoids/BoidsRender"
         };
 
         #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-        // Boidデータの構造体バッファ
+        // Boid data structure buffer
         StructuredBuffer<BoidData> _BoidDataBuffer;
         #endif
 
-        sampler2D _MainTex; // テクスチャ
+        sampler2D _MainTex; // texture
 
-        half   _Glossiness; // 光沢
-        half   _Metallic;   // 金属特性
-        fixed4 _Color;      // カラー
+        half   _Glossiness; // Gloss
+        half   _Metallic;   // Metal properties
+        fixed4 _Color;      // Color
 
-        float3 _ObjectScale; // Boidオブジェクトのスケール
+        float3 _ObjectScale; // Boid Object scale
 
-        // オイラー角（ラジアン）を回転行列に変換
+        // Convert Euler angles (radians) to rotation matrix
         float4x4 eulerAnglesToRotationMatrix(float3 angles)
         {
             float ch = cos(angles.y); float sh = sin(angles.y); // heading
@@ -833,39 +830,39 @@ Shader "Hidden/GPUBoids/BoidsRender"
             );
         }
 
-        // 頂点シェーダ
+        // Vertex shader
         void vert(inout appdata_full v)
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
 
-            // インスタンスIDからBoidのデータを取得
+            // Get Boid data from instance ID
             BoidData boidData = _BoidDataBuffer[unity_InstanceID]; 
 
-            float3 pos = boidData.position.xyz; // Boidの位置を取得
-            float3 scl = _ObjectScale;          // Boidのスケールを取得
+            float3 pos = boidData.position.xyz; // Get Boid position
+            float3 scl = _ObjectScale;          // Get Boid Scale
 
-            // オブジェクト座標からワールド座標に変換する行列を定義
+            // Define a matrix to transform from object coordinates to world coordinates
             float4x4 object2world = (float4x4)0; 
-            // スケール値を代入
+            // Substitute scale value
             object2world._11_22_33_44 = float4(scl.xyz, 1.0);
-            // 速度からY軸についての回転を算出
+            // Calculate rotation about Y axis from speed
             float rotY = 
                 atan2(boidData.velocity.x, boidData.velocity.z);
-            // 速度からX軸についての回転を算出
+            // Calculate rotation about X axis from speed
             float rotX = 
                 -asin(boidData.velocity.y / (length(boidData.velocity.xyz)
-                + 1e-8)); // 0除算防止
-            // オイラー角（ラジアン）から回転行列を求める
+                + 1e-8)); // 0 division prevention
+            // Find rotation matrix from Euler angles (radians)
             float4x4 rotMatrix = 
                 eulerAnglesToRotationMatrix(float3(rotX, rotY, 0));
-            // 行列に回転を適用
+            // Apply rotation to matrix
             object2world = mul(rotMatrix, object2world);
-            // 行列に位置（平行移動）を適用
+            // Apply position (translation) to matrix
             object2world._14_24_34 += pos.xyz;
 
-            // 頂点を座標変換
+            // Coordinate conversion of vertices
             v.vertex = mul(object2world, v.vertex);
-            // 法線を座標変換
+            // Convert normal to coordinates
             v.normal = normalize(mul(object2world, v.normal));
             #endif
         }
@@ -874,7 +871,7 @@ Shader "Hidden/GPUBoids/BoidsRender"
         {
         }
 
-        // サーフェスシェーダ
+        // Surface shader
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
             fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
@@ -891,72 +888,72 @@ Shader "Hidden/GPUBoids/BoidsRender"
 
 
 #pragma surface surf Standard vertex:vert addshadow
-この部分では、サーフェスシェーダとしてsurf()、ライティングモデルはStandard、カスタム頂点シェーダとしてvert()を指定するという処理を行っています。
+In this part, surf() is specified as the surface shader, Standard is specified as the lighting model, and vert() is specified as the custom vertex shader.
 
 
 
-#pragma instancing_options ディレクティブで procedural:FunctionName と記述することによって、Graphics.DrawMeshInstancedIndirectメソッドを使うときのための追加のバリアントを生成するようにUnityに指示することができ、頂点シェーダステージの始めに、FunctionNameで指定した関数が呼ばれるようになります。
-公式のサンプル（https://docs.unity3d.com/ScriptReference/
-Graphics.DrawMeshInstancedIndirect.html）などを見ると、この関数内で、個々のインスタンスの位置や回転、スケールに基づき、unity_ObjectToWorld行列, unity_WorldToObject行列の書き換えを行っていますが、このサンプルプログラムでは、頂点シェーダ内でBoidsのデータを受け取り、頂点や法線の座標変換を行っています（良いのかわかりませんが…）。
-そのため、指定したsetup関数内では何も記述していません。
+You can tell Unity to generate an additional variant for when you use the Graphics.DrawMeshInstancedIndirect method by writing procedural:FunctionName in the #pragma instancing_options directive, and specify it in FunctionName at the beginning of the vertex shader stage. The called function will be called.
+Official sample（https://docs.unity3d.com/ScriptReference/
+Graphics.DrawMeshInstancedIndirect.html）Looking at etc., in this function, unity_ObjectToWorld matrix, unity_WorldToObject matrix is ​​rewritten based on the position, rotation and scale of each instance, but in this sample program, data of Boids is received in the vertex shader, I am converting the coordinates of vertices and normals (I am not sure if it is good ...).
+Therefore, nothing is written in the specified setup function.
 
 
-==== 頂点シェーダでインスタンスごとのBoidのデータを取得し座標変換をする
+==== Get the Boid data for each instance with the vertex shader and convert the coordinates
 
 
-頂点シェーダ（Vertex Shader）に、シェーダに渡されたメッシュの頂点に対して行う処理を記述します。
-
-
-
-unity_InstanceIDによってインスタンスごとに固有のIDを取得することができます。このIDをBoidデータのバッファとして宣言したStructuredBufferの配列のインデックスに指定することによって、インスタンスごとに固有のBoidデータを得ることができます。
-
-
-==== 回転を求める
-
-
-Boidの速度データから、進行方向を向くような回転の値を算出します。
-ここでは直感的に扱うために、回転はオイラー角で表現することにします。
-Boidを飛行体と捉えると、オブジェクトを基準とした座標の3軸の回転は、それぞれ、ピッチ、ヨー、ロールと呼ばれます。
+In Vertex Shader, describe the processing to be performed on the vertices of the mesh passed to the shader.
 
 
 
-//image[roll-pitch-yaw][軸と回転の呼称]{
+You can get the unique ID for each instance by unity_InstanceID. By specifying this ID as the index of the array of StructuredBuffer that is declared as a buffer of Boid data, you can get Boid data unique to each instance.
+
+
+==== Ask for rotation
+
+
+From the velocity data of the Boid, calculate the rotation value so as to face the traveling direction.
+In order to handle it intuitively, rotation is expressed by Euler angles.
+When the Boid is regarded as a flying object, the rotations of the three axes with respect to the object are called pitch, yaw, and roll, respectively.
+
+
+
+//image[roll-pitch-yaw][Axis and rotation designation]{
 //}
 
 
 
 
-まず、Z軸についての速度とX軸についての速度から、逆正接（アークタンジェント）を返すatan2メソッドを用いてヨー（水平面に対してどの方向を向いているか）を求めます。
+First, from the velocity about the Z-axis and the velocity about the X-axis, yaw (which direction it is facing with respect to the horizontal plane) is obtained using the atan2 method that returns the arctangent.
 
 
 
-//image[arctan][速度と角度（ヨー）の関係]{
+//image[arctan][Relationship between speed and angle (yaw)]{
 //}
 
 
 
 
-次に、速度の大きさと、Y軸についての速度の比率から、逆正弦（アークサイン）を返すasinメソッドを用いてピッチ（上下の傾き）を求めています。それぞれの軸についての速度の中でY軸の速度が小さい場合は、変化が少なく水平を保つように重みのついた回転量になるようになっています。
+Next, the asin method that returns the arc sine (arc sine) is used to find the pitch (upward and downward inclination) from the ratio of the speed and the speed about the Y axis. When the Y-axis speed is small among the speeds for each axis, the amount of rotation is weighted so that the Y-axis speed is small and the level is kept horizontal.
 
 
 
-//image[arcsin][速度と角度（ピッチ）の関係]{
+//image[arcsin][Relationship between speed and angle (pitch)]{
 //}
 
 
 
-==== Boidのトランスフォームを適用する行列を計算
+==== Compute matrix applying Boid transform
 
 
-移動、回転、拡大縮小といった座標変換処理は、まとめて一つの行列で表現することができます。
-4x4の行列object2worldを定義します。
+Coordinate conversion processing such as movement, rotation, and scaling can be expressed together in a single matrix.
+Define a 4x4 matrix object2world.
 
 
-===== 拡大縮小
+===== Scale
 
 
-まず、スケール値を代入します。
-XYZ軸それぞれに @<m>{\rm S_x S_y S_z {\}} だけ拡大縮小を行う行列Sは以下のように表現されます。
+First, substitute the scale value.
+For each XYZ axis @<m>{\rm S_x S_y S_z {\}} The matrix S that scales only by is expressed as follows.
 
 
 
@@ -975,8 +972,8 @@ S=
 
 
 
-HLSLのfloat4x4型の変数は、._11_22_33_44のようなスィズルを用いて行列の特定の要素を指定できます。
-デフォルトであれば、成分は以下のように整列してます。
+HLSL float4x4 type variables can specify a particular element of the matrix using swizzles like ._11_22_33_44.
+By default, the components are arranged as follows.
 
 //table[tbl2][]{
 11	12	13	14
@@ -987,14 +984,14 @@ HLSLのfloat4x4型の変数は、._11_22_33_44のようなスィズルを用い�
 //}
 
 
-ここでは、11、22、33、にXYZそれぞれのスケールの値、44には1を代入します。
+Here, substitute the values ​​of the scale of XYZ for 11, 22, 33, and 1 for 44.
 
 
-===== 回転
+===== rotation
 
 
-次に、回転を適用します。
-XYZ軸それぞれについての回転 @<m>{\rm R_x R_y R_z {\}} を行列で表現すると、
+Then apply rotation.
+Rotation about each XYZ axis @<m>{\rm R_x R_y R_z {\}} is expressed as a matrix,
 
 
 
@@ -1043,24 +1040,24 @@ R_z(\psi)=
 
 
 
-これを一つに行列に合成します。このとき、合成する回転の軸の順によって回転時の挙動が変化しますが、この順に合成すると、Unityの標準の回転と同様のものになるはずです。
+This is combined into a matrix. At this time, the behavior at the time of rotation changes depending on the order of the rotation axis to be combined, but if combined in this order, it should be similar to Unity's standard rotation.
 
 
 
-//image[synth-euler2matrix][回転行列の合成]{
+//image[synth-euler2matrix][Composition of rotation matrix]{
 //}
 
 
 
 
-これによって求められた回転行列と、上のスケールを適用した行列との積を求めることによって、回転を適用します。
+Apply rotation by finding the product of the resulting rotation matrix and the scaled matrix above.
 
 
-===== 平行移動
+===== Translation
 
 
-次に、平行移動を適用します。
-それぞれの軸に、 @<m>{\rm T_x T_y T_z {\}} 平行移動するとすると、行列は以下のように表現されます。
+Then apply the translation.
+On each axis,@<m>{\rm T_x T_y T_z {\}} When translated, the matrix is ​​represented as
 
 
 
@@ -1078,40 +1075,40 @@ R_z(\psi)=
 
 
 
-この平行移動は、14, 24, 34成分にXYZそれぞれの軸についての位置（Position）データを加算することで適用できます。
+This translation can be applied by adding the position data for the XYZ axes to the 14, 24 and 34 components.
 
 
 
-これらの計算によって得られた行列を、頂点、法線に適用させることによって、Boidのトランスフォームデータを反映します。
+By applying the matrix obtained by these calculations to the vertices and normals, the Boid transform data is reflected.
 
 
-=== 描画結果
+=== Drawing result
 
 
-このように群れっぽい動きをするオブジェクトが描画されると思います。
+I think that an object that moves like a flock like this is drawn.
 
 
 
-//image[result][実行結果]{
+//image[result][Execution result]{
 //}
 
 
 
-== まとめ
+== Summary
 
 
-この章で紹介した実装は、最低限のBoidsのアルゴリズムを利用したものですが、パラメータの調整によっても、群は大きなまとまりになったり、幾つもの小群体が作られたりと、異なる特徴を持った動きを見せると思います。ここで示した基本的な行動規則の他にも、考慮すべきルールが存在します。例えば、これが魚の群だとして、それらを捕食する外敵が現れたとすると当然逃げるような動きをし、地形など障害物があるとすれば魚はぶつからないように避けるでしょう。視覚について考えると、動物の種によっては視野や精度も異なり、視界の外の他の個体は計算処理から除外するなどすると、より実際のものに近づいていくと思います。空を飛ぶのか、水の中を動くのか、陸上を移動するのかといった環境や、移動運動のための運動器官の特性によっても動きの特徴が変わってきます。個体差にも着眼すべきです。
-
-
-
-GPUによる並列処理は、CPUによる演算に比べれば多くの個体を計算できますが、基本的には他の個体との計算は総当たりで行っており、計算効率はあまり良いとは言えません。それには、個体をその位置によってグリッドやブロックで分割した領域に登録しておき、隣接した領域に存在する個体についてだけ計算処理を行うというように、近傍個体探索の効率化を図ることで計算コストを抑えることができます。
+The implementation introduced in this chapter uses the minimum Boids algorithm, but it also has different characteristics such as a large group or several small colonies even if the parameters are adjusted. I think it will show a movement. In addition to the basic rules of behavior shown here, there are other rules to consider. For example, if this is a school of fish, it will naturally escape if a foreign enemy preying on them appears, and if there are obstacles such as terrain, the fish will avoid hitting it. In terms of vision, the field of view and accuracy differ depending on the species of animal, and I think that if you exclude other individuals outside the field of view from the calculation process, you will get closer to the actual one. The characteristics of movement also change depending on the environment such as whether you fly in the sky, move in water, or move on land, and the characteristics of the motor organs for locomotion. You should also pay attention to individual differences.
 
 
 
-このように改良の余地は多く残されており、適切な実装と行動のルールを適用することにより、いっそう美しく、迫力、密度と味わいのある群の動きが表現できるようになることと思います。できるようになりたいです。
+Parallel processing by GPU can calculate many individuals compared to the calculation by CPU, but basically, it does brute force calculation with other individuals, so it cannot be said that the calculation efficiency is very good. To do this, the cost of computation is increased by increasing the efficiency of the neighboring individual search, such as registering individuals in regions divided by grids or blocks according to their positions and performing calculation processing only for the individuals that exist in adjacent regions. Can be suppressed.
 
 
-== 参照
+
+There is plenty of room for improvement in this way, and by applying proper implementation and behavior rules, it is possible to express more beautiful, powerful, dense and tasting group movements. I want to be able to do it.
+
+
+== reference
  * Boids Background and Update - https://www.red3d.com/cwr/boids/
  * THE NATURE OF CODE - http://natureofcode.com/
  * Real-Time Particle Systems on the GPU in Dynamic Environments - http://amd-dev.wpengine.netdna-cdn.com/wordpress/media/2013/02/Chapter7-Drone-Real-Time@<b>{Particle}Systems@<b>{On}The_GPU.pdf
