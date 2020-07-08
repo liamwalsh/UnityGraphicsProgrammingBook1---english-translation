@@ -1,53 +1,55 @@
 
-= 格子法による流体シミュレーション
+= Fluid simulation by grid method
 
-== この章について
+== About this chapter
 
-本章では、ComputeShaderを使った格子法による流体シミュレーションについて解説します。
+In this chapter, we will explain the fluid simulation by the grid method using Compute Shader.
 
-== サンプルデータ
 
-=== コード
+
+== Sample data
+
+=== code
 @<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming/,https://github.com/IndieVisualLab/UnityGraphicsProgramming/}  
 
 のAssets/StabeFluidsに格納されています。
 
-=== 実行環境
- * ComputeShaderが実行できる、シェーダーモデル5.0対応環境
- * 執筆時環境、Unity5.6.2, Unity2017.1.1で動作確認済み
+=== Execution environment
+ * Shader model 5.0 compatible environment that ComputeShader can execute
+ * Environment confirmed at the time of writing, Unity5.6.2, Unity2017.1.1
 
-== はじめに
+== Introduction
 
-本章では、格子法による流体シミュレーションと、それらを実現するにあたって必要となる、数式の計算方法や捉え方を解説していきます。まず格子法とは何でしょう。その意味を探る為に、一度流体力学での「流れ」の解析方法に少し迫ってみましょう。
+In this chapter, we will explain the fluid simulation by the grid method and the calculation method and the way of understanding the mathematical formulas that are necessary to realize them. First of all, what is the lattice method? In order to find out its meaning, let's take a closer look at the method of analyzing “flow” in hydrodynamics.
 
-=== 流体力学での捉え方
+=== How to think in fluid mechanics
 
-流体力学とは、自然現象である「流れ」を数式化して、計算可能なものとする事に特徴をおいています。この「流れ」、一体どうすれば数値化し解析することが出来るでしょうか。@<br>{}
-端的に行ってしまいますと、「時間が一瞬進んだ時の流速」を導く事で数値化する事ができます。少し数学的に言うと、時間で微分した際の流速ベクトルの変化量の解析と言い換える事ができます。@<br>{}
-ただ、この流れを解析する方法として、二つの手法が考えられます。@<br>{}
-一つは、お風呂のお湯をイメージした際に、お風呂にはったお湯を格子状に分割し、その固定された各格子空間の流速ベクトルを測定する方法。@<br>{}
-そしてもう一つは、お風呂にアヒルを浮かべ、アヒルの動き自体を解析する方法です。この二つの方法の内、前者を「オイラーの方法」、後者を「ラグランジュの方法」と呼びます。
+Fluid mechanics is characterized by formulating a natural phenomenon, "flow", and making it computable. How can this "flow" be digitized and analyzed? @<br>{}
+If you go straight, it can be quantified by guiding "the flow velocity when the time advances momentarily". Mathematically speaking, it can be translated into the analysis of the amount of change in the velocity vector when differentiated with respect to time. @<br>{}
+However, there are two possible methods to analyze this flow. @<br>{}
+One is to divide the hot water in the bath into grids and measure the flow velocity vector of each fixed grid space when you imagine the hot water in the bath. @<br>{}
+And the other is to float the duck in the bath and analyze the duck movement itself. Of these two methods, the former is called "Euler's method" and the latter is called "Lagrange's method".
 
-=== 様々な流体シミュレーション
+=== Various fluid simulations
 
-さて、一旦コンピューターグラフィックスの方に話を戻しましょう。流体シミュレーションにも、「オイラーの方法」や「ラグランジュの方法」の様にいくつかのシミュレーション方法が存在しますが、大きく分けて、以下の３種類に大別する事ができます。
+Now let's get back to computer graphics. There are several simulation methods for fluid simulation, such as "Euler's method" and "Lagrange's method", but they can be broadly divided into the following three types.
 
- * 格子法 (e.g. Stable Fluid)
- * 粒子法 (e.g. SPH)
- * 格子法＋粒子法 (e.g. FLIP)
+ * Lattice method (e.g. Stable Fluid)
+ * Particle method (e.g. SPH)
+ * Lattice method + particle method (e.g. FLIP)
 
-漢字の意味合いから少し想像することができるかもしれませんが、格子法は「オイラーの方法」の様に、流れをシミュレーションする際に格子状の「場」を作り、時間で微分した際にその各格子がどういった速度になっているかをシミュレーションする手法をいいます。
-また粒子法は「ラグランジュの方法」の様に、その粒子の方に着目し、粒子自体の移流をシミュレーションする方法を言います。@<br>{}
-格子法・粒子法と共に、お互いに得意不得意な範囲があります。@<br>{}
-格子法は流体のシミュレーションにおいて、圧力・粘性・拡散等の計算は得意ですが、移流の計算が不得意です。@<br>{}
-これとは逆に、粒子法は移流の計算が得意です。（これらの得意不得意は、オイラーの方法とラグランジュの方法の解析の仕方を思い浮かべると想像がつくかもしれません。）@<br>{}
-これらを補う為に、FLIP法に代表される、格子法＋粒子法と言った得意分野を補い合う手法も生まれています。  
+It may be a little imaginable from the meaning of the kanji, but the grid method, like the Euler method, creates a grid-shaped "field" when simulating a flow, and differentiates it by time. It is a method of simulating the speed of each grid.
+The particle method is a method of simulating the advection of the particle itself, focusing on the particle, as in the "Lagrange method". @<br>{}
+Along with the lattice method and the particle method, there are areas where we are good and bad at each other. @<br>{}
+The lattice method is good at calculating pressure, viscosity, diffusion, etc. in fluid simulation, but not good at advection calculation. @<br>{}
+On the contrary, the particle method is good at calculating advection. (These strengths and weaknesses can be imagined when you think of how to analyze Euler's method and Lagrange's method.)@<br>{}
+In order to supplement these, methods such as the lattice method + particle method, which are typified by the FLIP method, have been born to complement each other's specialty fields.
 
-本稿ではSIGGRAPH 1999.で発表されたJon Stam氏の格子法における非圧縮性粘性流体シミュレーションの論文であるStable Fluidsを元に、流体シミュレーションの実装方法やシミュレーションにおける必要な数式の説明を行なっていきます。
+In this paper, based on Jon Stam's Stable Fluids, which is a paper on incompressible viscous fluid simulation in the lattice method presented at SIGGRAPH 1999., we will explain the implementation method of fluid simulation and the mathematical formulas required for simulation. ..
 
-== ナビエ・ストークス方程式について
+== On the Navier-Stokes equation
 
-まずは、格子法におけるナビエ・ストークスの方程式について見ていきましょう。  
+First, let's look at the Navier-Stokes equation in the lattice method.
 
 //texequation{
 \dfrac {\partial \overrightarrow {u}} {\partial t}=-\left( \overrightarrow {u} \cdot \nabla \right) \overrightarrow {u} + \nu \nabla ^{2} \overrightarrow {u} + \overrightarrow{f}
@@ -61,16 +63,16 @@
 \nabla \cdot \overrightarrow{u} = 0
 //}
 
-上記の内、一つ目の方程式は速度場、二つ目は密度場を表します。また、3つ目は「連続の式（質量保存則）」となります。
-これらの3つの式を一つずつ紐解いて見ましょう。  
+Of the above, the first equation represents the velocity field and the second the density field. The third is "Continuity formula (mass conservation law)".
+Let's try unraveling these three expressions one by one.
 
 
-== 連続の式（質量保存則）
+== Formula of continuity (mass conservation law)
 
 
-まずは式としても短く、「非圧縮性」流体をシミュレーションする際の条件として働く「連続の式（質量保存則）」から紐解いて見ましょう。@<br>{}
-流体をシミュレーションする際に、その対象が圧縮性か非圧縮性かを明確に区別する必要があります。例えば、気体等の密度が圧力によって変化する物が対象である場合は圧縮性流体となります。逆に、水などの密度がどの場所でも一定である物は、非圧縮性流体となります。@<br>{}
-本章では非圧縮性流体のシミュレーションを取り扱いますので、速度場の各セルの発散は0に保つ必要があります。つまり、速度場の流入と流出を相殺させ、0になるように維持します。流入があれば流出させる為、流速は伝搬して行く事となります。この条件は連続の式（質量保存則）として、以下の方程式で表す事ができます。
+First, let's unravel from the "continuous equation (mass conservation law)", which is a short equation and serves as a condition when simulating an "incompressible" fluid. @<br>{}
+When simulating a fluid, you need to make a clear distinction between what is compressible and what is incompressible. For example, if the target is a substance whose density such as gas changes with pressure, it will be a compressible fluid. On the other hand, if the density of water is constant at any place, it is an incompressible fluid. @<br>{}
+Since this chapter deals with the simulation of incompressible fluids, the divergence of each cell in the velocity field should be kept at zero. In other words, it cancels the inflow and outflow of the velocity field and keeps it at 0. If there is an inflow, it will flow out, so the flow velocity will propagate. This condition can be expressed by the following equation as a continuous equation (mass conservation law).
 
 
 
@@ -80,10 +82,10 @@
 
 
 
-上記は「発散（ダイバージェンス）が0」であるという意味になります。まずは「発散（ダイバージェンス）」の数式を確認しておきましょう。
+The above means that "divergence is 0". First, let's check the formula for "divergence".
 
 
-=== 発散（Divergence）
+=== Divergence
 
 
 //texequation{
@@ -92,26 +94,25 @@
 
 
 
-@<m>{\nabla}（ナブラ演算子）はベクトル微分演算子といいます。例えばベクトル場が2次元と想定した場合に、図のように@<m>{ \left( \dfrac {\partial \} {\partial x\}_, \dfrac {\partial \} {\partial y\} \right) }の偏微分を取る際の、偏微分の表記を簡略化した演算子として作用します。@<m>{\nabla}演算子は演算子ですので、それだけでは意味を持ちませんが、一緒に組み合わせる式が内積なのか、外積なのか、それとも単に@<m>{\nabla f}といった関数なのかで演算内容が変わってきます。@<br>{}
-今回は偏微分の内積をとる「発散（ダイバージェンス）」について説明しておきましょう。まず、なぜこの式が「発散」という意味になるのかを見てみます。
+@<m>{\nabla}(Nabla operator) is called vector differential operator. For example, assuming that the vector field is two-dimensional,@<m>{ \left( \dfrac {\partial \} {\partial x\}_, \dfrac {\partial \} {\partial y\} \right) }の偏微分を取る際の、偏微分の表記を簡略化した演算子として作用します。@<m>{\nabla}演算子は演算子ですので、それだけでは意味を持ちませんが、一緒に組み合わせる式が内積なのか、外積なのか、それとも単に@<m>{\nabla f}といった関数なのかで演算内容が変わってきます。@<br>{}
+This time, let's talk about "divergence," which is the inner product of partial derivatives. First, let's see why this expression means "divergence".
 
 
 
-発散を理解する為に、まずは下記のような格子空間の一つのセルを切り出して考えてみましょう。
+In order to understand the divergence, let's first consider cutting out one cell in the lattice space as shown below.
 
 
 
-//image[divergence-s][ベクトル場から微分区間（Δx,Δy）のセルを抽出][scale=0.7]{
+//image[divergence-s][Extract cells of differential interval (Δx, Δy) from vector field]{
 //}
 
 
 
 
-発散とは、ベクトル場の一つのセルにどれくらいのベクトルが流出、流入しているかを算出する事を言います。なお流出を＋、流入を−とします。
-  
-発散は上記のように、ベクトル場のセルを切り取った際の偏微分をみた際に、x方向の特定のポイントxと微量に進んだ@<m>{\Delta x}との変化量、また、y方向の特定のポイントyと微量に進んだ@<m>{\Delta y}との変化量の内積で求める事ができます。
-なぜ偏微分との内積で流出が求まるかは、上記の図を微分演算する事で証明できます。
+Divergence is the calculation of how many vectors flow into and out of one cell in the vector field. Outflow is + and inflow is -.
 
+The divergence is the amount of change between a specific point x in the x direction and a slight amount of @<m>{\Delta x} when looking at the partial derivative when the cell of the vector field is cut off as described above, or , It can be calculated by the inner product of the change amount of the specific point y in the y direction and the slightly advanced @<m>{\Delta y}.
+The reason why the outflow is obtained by the inner product with the partial derivative can be proved by differentiating the above figure.
 
 
 //texequation{
@@ -134,17 +135,17 @@
 
 
 
-とする事で、最終的に偏微分との内積の式と等式になる事がわかります。
+By doing, you can finally find the equation and the equation of the inner product with the partial derivative.
 
 
-== 速度場
+== Velocity field
 
 
-次に、格子法の本丸である速度場について説明していきます。
-その前に、速度場のナビエ・ストークス方程式を実装していくにあたって、先ほど確認した発散（divergence）に加え、勾配（gradient）とラプラシアン（Laplacian）について確認しておきましょう。
+Next, I will explain the velocity field, which is the main point of the lattice method.
+Before that, let's confirm the gradient and Laplacian in addition to the divergence confirmed earlier when implementing the Navier-Stokes equation of the velocity field.
 
 
-=== 勾配（Gradient）
+=== Gradient
 
 
 //texequation{
@@ -152,10 +153,10 @@
 //}
 
 
-@<m>{\nabla f (grad \ f)}は勾配を求める式となります。意味としては、各偏微分方向に微小に進んだ座標を、関数@<m>{f}にてサンプリングし、求められた各偏微分方向の値を合成する事によって、最終的にどのベクトルを向くのかを意味しています。つまり、偏微分した際の値の大きい方向に向いたベクトルを算出する事ができます。
+@<m>{\nabla f (grad \ f)}Is the formula for the gradient. The meaning is that by sampling the coordinates slightly advanced in each partial differential direction with the function @<m>{f} and synthesizing the obtained values ​​in each partial differential direction, which vector is finally determined. It means facing. In other words, it is possible to calculate the vector that is oriented in the direction with the larger value when the partial differentiation is performed.
 
 
-=== ラプラシアン（Laplacian）
+=== Laplacian
 
 
 //texequation{
@@ -164,15 +165,15 @@
 
 
 
-ラプラシアンはナブラを上下反転させた記号で表されます。(デルタと同じですが、文脈から読み取り、間違えないようにしましょう。)@<br>{}
-@<m>{\nabla^2 f}、もしくは@<m>{\nabla \cdot \nabla f}とも書き、二階偏微分として演算されます。@<br>{}
-また、解体して考えると、関数の勾配をとって、発散を求めた形とも取れるでしょう。@<br>{}
-意味合い的に考えると、ベクトル場の中で勾配方向に集中した箇所は流入が多い為、発散をとった場合−に、逆に勾配の低い箇所は湧き出しが多いので発散を取った時に＋になる事が想像できます。@<br>{}
-ラプラシアン演算子にはスカラーラプラシアンとベクトルラプラシアンがあり、ベクトル場に作用させる場合は、勾配・発散・回転（∇とベクトルの外積）を用いた、@<br>{}
+Laplacian is represented by the symbol of Nabla inverted upside down. (Same as Delta, but read from the context, don't make a mistake.)@<br>{}
+@<m>{\nabla^2 f}Or@<m>{\nabla \cdot \nabla f}It is also written as and is calculated as the second partial derivative.@<br>{}
+Also, when it is disassembled and considered, it can be taken as a form in which the gradient of the function is taken and the divergence is obtained.@<br>{}
+In terms of meaning, there are many inflows at the points concentrated in the gradient direction in the vector field, so there is a divergence. I can imagine that.@<br>{}
+There are two types of Laplacian operators, scalar Laplacian and vector Laplacian. When acting on a vector field, gradient, divergence, and rotation (the outer product of ∇ and the vector) are used.@<br>{}
 //texequation{
 \nabla^2 \overrightarrow{u} = \nabla \nabla \cdot \overrightarrow{u} - \nabla \times \nabla \times \overrightarrow{u}
 //}
-といった式で導くのですが、直交座標系の場合のみ、ベクトルの成分毎に勾配と発散を求め、合成する事で求める事ができます。
+However, only in the case of Cartesian coordinate system, the gradient and divergence can be obtained for each vector component, and can be obtained by combining them.
 
 
 
@@ -186,11 +187,11 @@
 
 
 
-以上で、格子法でのナビエ・ストークス方程式を解くための必要な数式の確認は完了しました。
-ここから、速度場の方程式を各項ごとに見ていきましょう。
+This completes the confirmation of the mathematical formulas required to solve the Navier-Stokes equations in the lattice method.
+From here, let's look at the velocity field equation for each term.
 
 
-=== ナビエ・ストークス方程式から速度場の確認
+=== Confirmation of velocity field from Navier-Stokes equation
 
 
 //texequation{
@@ -199,36 +200,36 @@
 
 
 
-上記の内、@<m>{\overrightarrow {u\}}は流速、@<m>{\nu}は動粘性係数（kinematic viscosity）、@<m>{\overrightarrow{f\}}は外力（force）になります。@<br>{}
-左辺側は時間で偏微分をとった際の流速である事がわかります。右辺側は第一項を移流項、第二項を拡散粘性項、第三項を圧力項、第四項を外力項とします。  
+Of the above,@<m>{\overrightarrow {u\}}Is the flow velocity,@<m>{\nu}Is the kinematic viscosity coefficient（kinematic viscosity）、@<m>{\overrightarrow{f\}}Is an external force.@<br>{}
+You can see that the left side is the flow velocity when partial differentiation is taken with time. On the right side, the first term is the advection term, the second term is the diffusion viscosity term, the third term is the pressure term, and the fourth term is the external force term.
 
 
 
-これらは、計算時には一括でできるものであっても、実装時にはステップに分けて実装して行く必要があります。@<br>{}
-まず、ステップとして、外力を受けなければ、初期条件のまま変化を起こす事ができませんので、第四項の外力項から考えて見たいと思います。
+Even if these can be done in a batch at the time of calculation, it is necessary to implement them in steps when implementing them. @<br>{}
+First of all, as a step, if you do not receive an external force, you cannot make changes under the initial conditions, so I would like to consider from the external force term of the fourth term.
 
 
-=== 速度場外力項
+=== Force item outside the velocity field
 
 
-これはシンプルに外部からのベクトルを加算する部分となります。つまり初期条件で速度場がベクトル量0の状態に対し、ベクトルの起点としてUIであったりなんらかのイベントから、RWTexture2Dの該当IDにベクトルを加算する部分となります。@<br>{}
-コンピュートシェーダーの外力項のカーネルは、以下の様に実装しておきます。また、コンピュートシェーダーにて使用予定の各係数やバッファの定義も記述しておきます。  
+This is the part that simply adds the vector from the outside. In other words, when the velocity field is 0 in the initial condition, the vector is added to the corresponding ID of RWTexture2D from the UI or some event as the starting point of the vector. @<br>{}
+The kernel of the external force term of compute shader is implemented as follows. Also, describe the definition of each coefficient and buffer that will be used in the compute shader.
 
 
 //emlist{
-float visc;                   //動粘性係数
-float dt;                     //デルタタイム
-float velocityCoef;           //速度場外力係数
-float densityCoef;            //密度場外圧係数
+float visc;                   //Kinematic viscosity coefficient
+float dt;                     //Delta time
+float velocityCoef;           //Velocity external force coefficient
+float densityCoef;            //Pressure coefficient outside density field
 
-//xy = velocity, z = density, 描画シェーダに渡す流体ソルバー
+//xy = velocity, z = density, Fluid solver to pass to the drawing shader
 RWTexture2D<float4> solver;
-//density field, 密度場
+//density field, Density field
 RWTexture2D<float>  density;  
-//velocity field, 速度場
+//velocity field, Velocity field
 RWTexture2D<float2> velocity; 
 //xy = pre vel, z = pre dens. when project, x = p, y = div
-//1ステップ前のバッファ保存、及び質量保存時の一時バッファ
+//Save buffer one step before and temporary buffer when saving mass
 RWTexture2D<float3> prev;
 //xy = velocity source, z = density source 外力入力バッファ
 Texture2D source;             
@@ -248,10 +249,10 @@ void AddSourceVelocity(uint2 id : SV_DispatchThreadID)
 //}
 
 
-次のステップとして、第二項の拡散粘性項を実装します。
+The next step is to implement the second term, the diffusive viscosity term.
 
 
-=== 速度場拡散粘性項
+=== Velocity field
 
 
 //texequation{
@@ -260,12 +261,12 @@ void AddSourceVelocity(uint2 id : SV_DispatchThreadID)
 
 
 
-@<m>{\nabla}演算子や@<m>{\Delta}演算子の左右に値がある時には、「右の要素にのみ作用する」というルールがありますので、この場合、動粘性係数は一旦置いておいて、ベクトルラプラシアンの部分を先に考えます。@<br>{}
-流速@<m>{\overrightarrow{u\}}に対してベクトルラプラシアンで、ベクトルの各成分毎の勾配と発散をとり合成させ、流速を隣接へ拡散させています。そこに動粘性係数を乗算する事によって、拡散の勢いを調整します。@<br>{}
-ここでは流速の各成分の勾配を取った上に拡散させていますので、隣接からの流入も隣接への流出も起こり、ステップ1で受けたベクトルが隣接へと影響していくという現象が分かるかと思います。@<br>{}
-実装面においては、少し工夫が必要となります。数式通りに実装すると、粘性係数と微分時間・格子数を乗算させた拡散率が高くなってしまった場合に、振動が起こり、収束が取れず最後にはシミュレーション自体が発散してしまいます。@<br>{}
-拡散をStableな状態にする為に、ここではガウス・ザイデル法やヤコビ法、SOR法等の反復法が用いられます。ここではガウス・ザイデル法でシミュレーションしてみましょう。@<br>{}
-ガウス・ザイデル法とは、式を自セルに対する未知数からなる線形方程式に変換し、算出された値をすぐに次の反復時に使い、連鎖させることで近似の答えに収束させていく方法です。反復回数は多ければ多いほど正確な値へと収束していきますが、リアルタイムレンダリングにおけるグラフィックスで必要なのは、正確な結果ではなく、より良いフレームレートと見た目の美しさですので、イテレーション回数はマシンパフォーマンスや見た目を考慮し、調整しましょう。
+@<m>{\nabla}演算子や@<m>{\Delta}When there is a value on the left and right of the operator, there is a rule that "acts only on the right element", so in this case, leave the kinematic viscosity coefficient once and consider the vector Laplacian part first. @<br>{}
+The vector Laplacian is used for the flow velocity @<m>{\overrightarrow{u\}} to synthesize the gradient and divergence of each component of the vector, and diffuse the flow velocity to the adjacent. By multiplying it by the kinematic viscosity coefficient, the diffusion momentum is adjusted. @<br>{}
+Here, since the gradient of each component of the flow velocity is taken and then diffused, it may be possible to understand the phenomenon that inflow from and outflow from adjacent neighbors occur, and the vector received in step 1 affects adjacent neighbors. think. @<br>{}
+On the mounting side, some ingenuity is required. If implemented according to the formula, vibration will occur when the diffusivity obtained by multiplying the viscosity coefficient by the differential time and the number of grids becomes high, and convergence will not be achieved and the simulation itself will eventually diverge. @<br>{}
+In order to make the diffusion stable, the iterative methods such as Gauss-Seidel method, Jacobi method and SOR method are used here. Here, let's simulate the Gauss-Seidel method. @<br>{}
+The Gauss-Seidel method is a method in which an equation is converted into a linear equation consisting of unknowns for its own cell, the calculated value is immediately used in the next iteration, and a chain is made to converge to an approximate answer. More iterations will converge to more accurate values, but the number of iterations is machine Adjust it considering performance and appearance.
 
 
 //emlist{
@@ -299,7 +300,7 @@ void DiffuseVelocity(uint2 id : SV_DispatchThreadID)
 上記のSetBoundaryVelocity関数は境界用のメソッドになります。詳しくはリポジトリをご参照下さい。
 
 
-=== 質量保存
+=== Quality preservation
 
 
 //texequation{
@@ -308,17 +309,17 @@ void DiffuseVelocity(uint2 id : SV_DispatchThreadID)
 
 
 
-ここで一旦、項を進める前に質量保存側に立ち返りましょう。これまでの工程で、外力項で受けた力を速度場に拡散させましたが、現状、各セルの質量は保存されておらず、湧き出しっぱなしの場所と流入が多い場所とで、質量が保存されていない状態になっています。@<br>{}
-上記の方程式の様に、質量は必ず保存させ各セルの発散を0に持っていかないといけませんから、ここで一旦質量を保存をしておきましょう。@<br>{}
-なお、質量保存ステップをComputeShaderで行う際、隣接スレッドとの偏微分演算を行う為、場を確定しておかなければなりません。
-グループシェアードメモリ内で偏微分演算ができれば高速化が見込めたのですが、別のグループスレッドから偏微分を取った時に、やはり値が取得できず汚い結果となってしまった為、ここはバッファを確定しながら、3ステップに分け進めます。@<br>{}
-速度場から発散算出 > Poisson方程式をガウス・ザイデル法で算出 > 速度場に減算させ質量保存@<br>{}
-の3ステップにカーネルをわけ、場を確定しながら質量保存に持っていきます。なお、SetBound~系は境界に対するメソッドの呼び出しになります。
+Now let's go back to the mass storage side before proceeding with the section. In the process up to this point, the force received by the external force term was diffused into the velocity field, but at present, the mass of each cell is not preserved, and the mass of the place where there is a lot of inflow and the place where there are many inflows Is not saved. @<br>{}
+As in the above equation, the mass must be saved and the divergence of each cell must be set to 0, so save the mass here. @<br>{}
+In addition, when performing the mass preservation step with ComputeShader, the field must be fixed because it performs a partial differential operation with the adjacent thread.
+If partial differential operation could be performed in the group shared memory, speedup could be expected, but when partial differential was taken from another group thread, the value could not be obtained and the result was dirty, so buffer here. While confirming, proceed in 3 steps. @<br>{}
+Calculate divergence from velocity field> Calculate Poisson equation by Gauss-Seidel method> Subtract velocity field and save mass@<br>{}
+Divide the kernel into the three steps of, and bring it to the mass conservation while establishing the field. The SetBound~ system is a method call for the boundary.
 
 
 //emlist{
-//質量保存Step1.
-//step1では、速度場から発散の算出
+//Quality preservation Step1.
+//In step 1, calculate the divergence from the velocity field
 [numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
 void ProjectStep1(uint2 id : SV_DispatchThreadID)
 {
@@ -343,8 +344,8 @@ void ProjectStep1(uint2 id : SV_DispatchThreadID)
     }
 }
 
-//質量保存Step2.
-//step2では、step1で求めた発散からPoisson方程式をガウス・ザイデル法で解く
+//Quality preservation Step 2.
+//In step2, the Poisson equation is solved by the Gauss-Seidel method from the divergence obtained in step1.
 [numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
 void ProjectStep2(uint2 id : SV_DispatchThreadID)
 {
@@ -367,8 +368,8 @@ void ProjectStep2(uint2 id : SV_DispatchThreadID)
     }
 }
 
-//質量保存Step3.
-//step3で、∇･u = 0にする.
+//Quality preservation Step 3.
+//step3 so、∇･u = 0 To
 [numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
 void ProjectStep3(uint2 id : SV_DispatchThreadID)
 {
@@ -397,10 +398,10 @@ void ProjectStep3(uint2 id : SV_DispatchThreadID)
 //}
 
 
-これで速度場を質量保存がされた状態にできました。流出した箇所に流入がおき、流入が多い箇所からは流出がおきる為、流体らしい表現になりました。  
+With this, the velocity field is in the state of mass conservation. Inflow occurs at the place where it flows out, and outflow occurs at the place where there is a large amount of inflow.
 
 
-=== 移流項
+=== Advection term
 
 
 //texequation{
@@ -409,8 +410,8 @@ void ProjectStep3(uint2 id : SV_DispatchThreadID)
 
 
 
-移流項はラグランジュの方法的な手法が用いられるのですが、1ステップ前の速度場のバックトレースを行い、該当セルから速度ベクトルを引いた箇所の値を、現在いる場所に移動するといった作業を各セルに対して行います。
-バックトレースした際に、格子にぴったり収まる場所に遡れる訳ではありませんので、移流の際は近傍4セルとの線形補間を行い、正しい値を移流させます。
+For the advection term, Lagrange's method is used, but it is necessary to perform backtracking of the velocity field one step before and move the value of the location where the velocity vector is subtracted from the relevant cell to the current location. Do this for each cell.
+When backtracing, it does not go back to a place that fits exactly on the grid, so at the time of advection, linear interpolation with the neighboring 4 cells is performed and the correct value is advected.
 
 
 //emlist{
@@ -427,24 +428,24 @@ void AdvectVelocity(uint2 id : SV_DispatchThreadID)
 
         dfdt = dt * (w + h) * 0.5;
 
-        //バックトレースポイント割り出し.
+        //Backtrace point calculation.
         x = (float)id.x - dfdt * prev[id].x;
         y = (float)id.y - dfdt * prev[id].y;
-        //ポイントがシミュレーション範囲内に収まるようにクランプ.
+        //Clamp the points so that they are within the simulation range.
         clamp(x, 0.5, w + 0.5);
         clamp(y, 0.5, h + 0.5);
-        //バックトレースポイントの近傍セル割り出し.
+        //Near cell index of back trace point.
         ddx0 = floor(x);
         ddx1 = ddx0 + 1;
         ddy0 = floor(y);
         ddy1 = ddy0 + 1;
-        //近傍セルとの線形補間用の差分を取っておく.
+        //Save the difference for linear interpolation with neighboring cells.
         s1 = x - ddx0;
         s0 = 1.0 - s1;
         t1 = y - ddy0;
         t0 = 1.0 - t1;
 
-        //バックトレースし、1step前の値を近傍との線形補間をとって、現在の速度場に代入。
+        //Back trace, take the value of 1 step before with linear interpolation and substitute it into the current velocity field.
         velocity[id] = s0 * (t0 * prev[int2(ddx0, ddy0)].xy +
                              t1 * prev[int2(ddx0, ddy1)].xy) +
                        s1 * (t0 * prev[int2(ddx1, ddy0)].xy +
@@ -454,10 +455,10 @@ void AdvectVelocity(uint2 id : SV_DispatchThreadID)
 }
 //}
 
-== 密度場
+== Density field
 
 
-次に密度場の方程式をみてみましょう。
+Next, let's see the density field equation.
 
 
 
@@ -467,48 +468,47 @@ void AdvectVelocity(uint2 id : SV_DispatchThreadID)
 
 
 
-上記の内、@<m>{\overrightarrow {u\}}は流速、@<m>{\kappa}は拡散係数、ρは密度、Sは外圧になります。@<br>{}
-密度場は必ずしも必要ではありませんが、速度場を求めた際の各ベクトルに対し、密度場で拡散させた画面上のピクセルを乗せる事で、溶けながら流れる様な、より流体らしい表現が可能になります。@<br>{}
-尚、密度場の数式を見て気づいた方もいらっしゃるかと思いますが、速度場と全く同じフローになっており、違いはベクトルがスカラーになっている点と、動粘性係数@<m>{\nu}が拡散係数@<m>{\kappa}になっている点、質量保存則を用いない点の3点のみしかありません。@<br>{}
-密度場は密度の変化の場ですので、非圧縮性である必要はなく、質量保存の必要がありません。また、動粘性係数と拡散係数は、係数としての使い所は同じになります。@<br>{}
-ですので、先ほど速度場で用いたカーネルの質量保存則以外のカーネルを、次元を落として作ることによって、密度場を実装する事が可能です。
-紙面上密度場の解説はしませんが、リポジトリには密度場も実装しておりますので、そちらもご参照ください。
+上記の内、@<m>{\overrightarrow {u\}}Is the flow velocity,@<m>{\kappa}Is the diffusion coefficient, ρ is the density, and S is the external pressure.@<br>{}
+The density field is not always necessary, but by adding the pixels on the screen diffused by the density field to each vector when the velocity field is obtained, it becomes possible to express a more fluid-like fluid like melting. I will. @<br>{}
+As you may have noticed by looking at the density field formula, the flow is exactly the same as the velocity field, the difference is that the vector is a scalar and the kinematic viscosity coefficient @<m>{ There are only three points: the point where \nu} is the diffusion coefficient @<m>{\kappa} and the point where the law of conservation of mass is not used. @<br>{}
+Since the density field is the field of change in density, it does not need to be incompressible and does not require mass conservation. The kinematic viscosity coefficient and the diffusion coefficient have the same usage as coefficients. @<br>{}
+Therefore, it is possible to implement the density field by reducing the dimension of the kernel other than the mass conservation law of the kernel used in the velocity field.
+I will not explain the density field on paper, but please refer to that as well because the density field is implemented in the repository.
+
+== Simulation term steps
 
 
-== シミュレーションの各項ステップ
+A fluid can be simulated by using the above velocity field, density field, and mass conservation law, but let's look at the simulation steps at the end.
+
+ * Generate an external force event and input it into the external force terms of the velocity and density fields
+ * Update the velocity field in the following steps
+ ** Loose sticky term
+ ** Quality preservation
+ ** Advection term
+ ** Quality preservation
+ * Then update the density field in the following steps
+ ** Loose item
+ ** Advancing density using velocity in velocity field
+
+The above is the simulation step of StableFluid.
 
 
-上記の速度場及び密度場、質量保存則を用いることによって流体をシミュレーションする事ができるのですが、シミュレーションのステップについて、最後に見ておきましょう。
+== result
 
- * 外力イベントを発生させ、速度場と密度場の外力項にインプット
- * 速度場を以下のステップで更新
- ** 拡散粘性項
- ** 質量保存則
- ** 移流項
- ** 質量保存則
- * その後密度場を以下のステップで更新
- ** 拡散項
- ** 速度場の速度を用いで密度を移流
+By executing and dragging on the screen with the mouse, the following fluid simulation can be triggered.
 
-上記がStableFluidのシミュレーションステップになります。
-
-
-== 結果
-
-実行して、マウスでスクリーン上をドラッグすると、以下の様な流体シミュレーションを起こす事が可能です。
-
-//image[fluid-s][実行例][scale=0.7]{
+//image[fluid-s][Execution example][scale=0.7]{
 //}
 
-== まとめ
+== Summary
 
-流体シミュレーションは、プリレンダリングと違い、Unityの様なリアルタイムゲームエンジンにとっては負荷の高い分野です。
-しかし、GPU演算能力の向上から、2次元であればある程度の解像度でも耐えうるFPSが出せる様になってきました。
-また、途中で出てきたGPUにとって負荷の高い演算部分、ガウス・ザイデル反復法を別の処理で実装してみたり、速度場自体をカールノイズで代用してみたり等の工夫をすれば、より軽い演算での流体表現も可能になる事でしょう。
+Unlike pre-rendering, fluid simulation is a heavy field for real-time game engines like Unity.
+However, due to improvements in GPU computing power, it has become possible to produce FPS that can withstand a certain level of resolution in two dimensions.
+In addition, if you try to implement the Gauss-Seidel iterative method, which is a heavy load on the GPU that came out on the way, with another process, or substitute the curl noise for the velocity field itself, It will be possible to express fluids with lighter calculations.
 
-もしこの章をお読みいただいて、少しでも流体に興味を持たれた方は、ぜひ次章の「粒子法による流体シミュレーション」にもトライして見て下さい。  
-格子法とはまた違った角度から流体に迫れますので、流体シミュレーションの奥深さや実装の面白さを体験できる事かと思います。
+If you have read this chapter and are interested in fluids, please try the next chapter, "Fluid Simulation by Particle Method".
+Since you can approach the fluid from a different angle from the grid method, I think that you can experience the depth of fluid simulation and the fun of mounting.
 
-== 参考
+== reference
 
  * Jos Stam. SIGGRAPH 1999. Stable Fluids
