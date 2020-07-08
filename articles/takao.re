@@ -1,47 +1,47 @@
 
-= SPH法による流体シミュレーション
+= Fluid simulation by SPH method
 
-前章では、格子法による流体シミュレーションの作成方法について解説しました。
-本章では、もう一つの流体のシミュレーション方法である粒子法、特にSPH法を用いて流体の動きを表現していきます。
-多少噛み砕いて説明を行っているので、不十分な表現などありますがご了承ください。
+In the previous chapter, we explained how to create a fluid simulation using the grid method.
+In this chapter, we will use another particle simulation method, the SPH method in particular, to represent the fluid motion.
+Please be aware that some explanations may be inadequate, as the explanation is made with a little bit of clutter.
 
-== 基礎知識
-=== オイラー的視点とラグランジュ的視点
-流体の動きの観測方法として、オイラー的視点とラグランジュ的視点というものが存在します。
-オイラー的視点とは、流体に等間隔で観測点を@<b>{固定}し、その観測点での流体の動きを解析するものです。
-一方、ラグランジュ的視点とは、流体の流れに沿って動く観測点を@<b>{浮かべ}、その観測点での流体の動きを観測するものとなります(@<img>{lagrange}参照)。
-基本的に、オイラー的視点を用いた流体シミュレーション手法のことを格子法、ラグランジュ的視点を用いた流体シミュレーション手法のことを粒子法と呼びます。
+== Basic knowledge
+=== Euler and Lagrangian perspectives
+There are Euler's point of view and Lagrange's point of view as a method of observing the movement of a fluid.
+The Euler's point of view is to fix the observation points at fixed intervals on the fluid @<b>{fixed} and analyze the movement of the fluid at the observation points.
+On the other hand, the Lagrangian point of view is that the observation point that moves along the fluid flow is @<b>{floating} and the movement of the fluid at that observation point is observed (see @<img>{lagrange}). ..
+Basically, the fluid simulation method using the Euler's viewpoint is called the grid method, and the fluid simulation method using the Lagrangian viewpoint is called the particle method.
 
-//image[lagrange][左:オイラー的、右:ラグランジュ的][scale=0.7]{
+//image[lagrange][Left: Euler-like, Right: Lagrange-like][scale=0.7]{
 //}
 
-=== ラグランジュ微分(物質微分)
-オイラー的視点とラグランジュ的視点では、微分の演算の仕方が異なります。
-はじめに、オイラー的視点で表された物理量@<fn>{quantity}を以下に示してみます。
-//footnote[quantity][物理量とは、観測できる速度や質量などのことを指します。 端的には「単位が有るもの」と捉えて良いでしょう。]
+=== Lagrange differentiation (material differentiation)
+The Euler and Lagrangian viewpoints differ in the way they are calculated.
+First, let us show the physical quantity @<fn>{quantity} expressed from the Euler point of view.
+//footnote[quantity][Physical quantity refers to observable speed and mass. In short, you can think of it as having a unit.]
 //texequation{
   \phi = \phi (\overrightarrow{x}, t)
 //}
-これは、時刻@<m>{t}で位置@<m>{\overrightarrow{x\}}にある物理量@<m>{\phi}という意味になります。
-この物理量の時間微分は、
+This is the time@<m>{t}Positioned at@<m>{\overrightarrow{x\}}Physical quantity@<m>{\phi}It means that · · ·
+The time derivative of this physical quantity is
 //texequation{
   \frac{\partial \phi}{\partial t}
 //}
-と表せます。
-もちろんこれは、物理量の位置が@<m>{\overrightarrow{x\}}で固定されていますので、オイラー的視点での微分になります。
+Can be expressed as
+Of course, this is because the position of the physical quantity@<m>{\overrightarrow{x\}}Since it is fixed at, it is the derivative from the Euler's point of view.
 
-//footnote[advect][流れに沿った観測点の移動のことを、移流と呼びます。]
-一方、ラグランジュ的視点では、観測点を流れに沿って移動@<fn>{advect}させますので、観測点自体も時間の関数となっています。
-そのため、初期状態で@<m>{\overrightarrow{x\}_0}にあった観測点は、時刻@<m>{t}で
+//footnote[advect][The movement of the observation point along the flow is called advection.]
+On the other hand, from the Lagrangian perspective, the observation point moves along the flow.@<fn>{advect}Therefore, the observation point itself is also a function of time.
+Therefore, in the initial state@<m>{\overrightarrow{x\}_0}The observation point in@<m>{t}で
 //texequation{
   \overrightarrow{x}(\overrightarrow{x}_0, t)
 //}
-に存在します。 よって物理量の表記も
+Exists in Therefore, the notation of physical quantity
 //texequation{
   \phi = \phi (\overrightarrow{x}(\overrightarrow{x}_0, t), t)
 //}
-となります。
-微分の定義に従って、現在の物理量と@<m>{\Delta t}秒後の物理量の変化量を見てみると
+Will be.
+According to the definition of derivative,@<m>{\Delta t}Looking at the amount of change in physical quantity after a second
 //texequation{
   \displaystyle \lim_{\Delta t \to 0} \frac{\phi(\overrightarrow{x}(\overrightarrow{x}_0, t + \Delta t), t + \Delta t) - \phi(\overrightarrow{x}(\overrightarrow{x}_0, t), t)}{\Delta t}
 //}
@@ -58,277 +58,276 @@
 //texequation{
   = (\frac{\partial}{\partial t} + \overrightarrow{u} \cdot {grad}) \phi
 //}
-となります。
-これが、観測点の移動を考慮した物理量の時間微分となります。
-しかしながら、この表記を用いていては式が複雑になりますので、
+Will be.
+This is the time derivative of the physical quantity considering the movement of the observation point.
+However, using this notation complicates the formula, so
 //texequation{
   \dfrac{D}{Dt} := \frac{\partial}{\partial t} + \overrightarrow{u} \cdot {grad}
 //}
-という演算子を導入することで、短く表すことができます。
-これら、観測点の移動を考慮した一連の操作を、ラグランジュ微分と呼びます。
-一見複雑そうに見えますが、観測点が移動する粒子法では、ラグランジュ的視点で式を表した方が都合が良くなります。
+It can be shortened by introducing the operator.
+A series of operations that consider the movement of observation points is called Lagrange differentiation.
+It may seem complicated at first glance, but in the particle method in which the observation points move, it is more convenient to express the formula from a Lagrangian perspective.
 
-=== 流体の非圧縮条件
-流体は、流体の速度が音速よりも十分に小さい場合、体積の変化が起きないとみなすことができます。
-これは流体の非圧縮条件と呼ばれ、以下の数式で表されます。
+=== Fluid incompressible condition
+A fluid can be considered to have no volume change if the velocity of the fluid is well below the speed of sound.
+This is called the fluid incompressible condition and is expressed by the following formula.
 //texequation{
   \nabla \cdot \overrightarrow{u} = 0
 //}
-これは、流体内で湧き出しや消失がないことを示しています。
-この式の導出には少し複雑な積分が入りますので、説明は割愛@<fn>{bridson}します。
-「流体は圧縮しない！」程度に捉えておいてください。
+This indicates that there is no upwelling or disappearance in the fluid.
+Derivation of this formula involves a little complicated integration, so the explanation is omitted.@<fn>{bridson}To do.
+Please keep in mind about "the fluid does not compress!"
 
 //footnote[bridson]["Fluid Simulation for Computer Graphics - Robert Bridson" で詳しく解説されています。]
 
-== 粒子法シミュレーション
-粒子法では、流体を小さな@<b>{粒子}によって分割し、ラグランジュ的視点で流体の動きを観測します。
-この粒子が、前節の観測点にあたります。 一口に「粒子法」といっても、現在では多くの手法が提案されており、有名なものとして
+== Particle method simulation
+Particle method, small fluid@<b>{粒子}Divide by and observe the fluid movement from a Lagrangian perspective.
+These particles are the observation points in the previous section. Even though the “particle method” is used to describe a lot, many methods have been proposed at the present time, and as a famous one,
 
- * Smoothed Particle Hydrodynamics(SPH)法
- * Fluid Implicit Particle (FLIP) 法
- * Particle In Cell (PIC) 法
- * Moving Particle Semi-implicit (MPS) 法
- * Material Point Method (MPM) 法
-などがあります。
+ * Smoothed Particle Hydrodynamics(SPH)law
+ * Fluid Implicit Particle (FLIP) law
+ * Particle In Cell (PIC) law
+ * Moving Particle Semi-implicit (MPS) law
+ * Material Point Method (MPM) law
+And so on.
 
-=== 粒子法におけるナビエ・ストークス方程式の導出
-はじめに、粒子法におけるナビエ・ストークス方程式(以下NS方程式)は、以下のように記述されます。
+=== Derivation of Navier-Stokes equations in the particle method
+First, the Navier-Stokes equation (hereinafter NS equation) in the particle method is described as follows.
 //texequation{
   \dfrac{D \overrightarrow{u}}{Dt} = -\dfrac{1}{\rho}\nabla p + \nu \nabla \cdot \nabla \overrightarrow{u} + \overrightarrow{g}
   \label{eq:navier}
 //}
-前章の格子法で出てきたNS方程式とは少し形が異なりますね。
-移流項がまるまる抜けてしまっていますが、先程のオイラー微分とラグランジュ微分の関係を見てみると、うまくこの形に変形できることがわかります。
-粒子法では観測点を流れに沿って移動させますから、NS方程式計算時に移流項を考慮する必要がありません。
-移流の計算はNS方程式で算出した加速度をもとに粒子位置を直接更新することで済ませる事ができます。
+The shape is a little different from the NS equation that appeared in the lattice method in the previous chapter.
+The advection term is completely gone, but if you look at the relationship between the Euler derivative and the Lagrange derivative, you can see that it can be transformed into this shape well.
+In the particle method, the observation point is moved along the flow, so it is not necessary to consider the advection term when calculating the NS equation.
+The advection calculation can be done by directly updating the particle position based on the acceleration calculated by the NS equation.
 
-#@#また、NS方程式は、意外にもニュートンの第二法則である@<m>{m\overrightarrow{a\} = \overrightarrow{f\}}を変形しただけのものなのです。
+#@#Also, the NS equation is surprisingly just a modification of Newton's second law, @<m>{m\overrightarrow{a\} = \overrightarrow{f\}}.
 
-現実の流体は分子の集まりですので、ある種のパーティクルシステムであると言うことができます。
-しかし、コンピュータで実際の分子の数の計算を行うのは不可能ですので、計算可能な大きさに調節してあげる必要があります。
-@<img>{blob}に示されているそれぞれの粒(@<fn>{blobfoot})は、計算可能な大きさで分割した流体の一部分を表していています。
-これらの粒は、それぞれ質量@<m>{m}、位置ベクトル@<m>{\overrightarrow{x\}}、
-速度ベクトル@<m>{\overrightarrow{u\}}、体積@<m>{V}を持つと考えることができます。
-#@# 画像の位置ベクトルの表記をxに変える
-//image[blob][流体のパーティクル近似][scale=0.7]{
+Since a real fluid is a collection of molecules, it can be said that it is a kind of particle system.
+However, it is impossible to calculate the actual number of molecules with a computer, so it is necessary to adjust it to a size that can be calculated.
+@<img>{blob}Each grain shown in(@<fn>{blobfoot})Represents a portion of the fluid divided into calculable sizes.
+Each of these grains has a mass@<m>{m}, Position vector@<m>{\overrightarrow{x\}}、
+Speed ​​vector@<m>{\overrightarrow{u\}},volume@<m>{V}Can be thought of as having.
+#@# Change notation of position vector of image to x
+//image[blob][Particle approximation of fluid][scale=0.7]{
 //}
-これらそれぞれの粒について、外から受けた力@<m>{\overrightarrow{f\}}を計算し、運動方程式@<m>{m \overrightarrow{a\} = \overrightarrow{f\}}を解くことで加速度が算出され、
-次のタイムステップでどのように移動するかを決めることができます。
+External force on each of these grains@<m>{\overrightarrow{f\}}To calculate the equation of motion@<m>{m \overrightarrow{a\} = \overrightarrow{f\}}The acceleration is calculated by solving
+You can decide how to move in the next time step.
 
-//footnote[blobfoot][英語では'Blob'と呼ばれます]
+//footnote[blobfoot][Called'Blob' in English]
 
-前述の通り、それぞれの粒子は周りから何らかの力を受けて動きますが、その「力」とは一体何でしょうか。
-簡単な例として、重力@<m>{m \overrightarrow{g\}}があげられますが、それ以外に周りの粒子からも何らかの力を受けるはずです。
-これらの力について、以下に解説します。
+As mentioned above, each particle moves by receiving some force from the surroundings. What is that "force"?
+As a simple example, gravity@<m>{m \overrightarrow{g\}}Other than that, some other force should also be exerted by surrounding particles.
+These forces are explained below.
 
-==== 圧力
-流体粒子にかかる力の1つ目は、圧力です。
-流体は必ず圧力の高い方から低い方に向かって流れます。
-もし圧力がどの方向からも同じだけかかっていたとすると、力は打ち消されて動きが止まってしまいますから、圧力のバランスが不均一である場合を考えます。
-前章で述べられたように、圧力のスカラー場の勾配を取ることで、自分の粒子位置から見て最も圧力上昇率の高い方向を算出することができます。
-粒子が力を受ける方向は、圧力の高い方から低い方ですので、マイナスを取って@<m>{-\nabla p}となります。
-また、粒子は体積を持っていますから、粒子にかかる圧力は、@<m>{-\nabla p}に粒子の体積をかけて算出します@<fn>{vol}。
-最終的に、@<m>{- V \nabla p}という結果が導出されます。
+==== pressure
+The first force on a fluid particle is pressure.
+The fluid always flows from higher pressure to lower pressure.
+If the pressure is the same from all directions, the force will be canceled and the movement will stop, so consider the case where the pressure is not balanced.
+As mentioned in the previous section, by taking the gradient of the pressure scalar field, it is possible to calculate the direction with the highest rate of pressure rise from the viewpoint of one's own particle position.粒子が力を受ける方向は、圧力の高い方から低い方ですので、マイナスを取って@<m>{-\nabla p}となります。
+Also, since particles have a volume, the pressure applied to them is@<m>{-\nabla p}It is calculated by multiplying the particle volume by@<fn>{vol}。
+Finally,@<m>{- V \nabla p}The result is derived.
 
-//footnote[vol][流体の非圧縮条件により、単に体積をかけるだけで粒子にかかる圧力の積分を表すことができます。]
+//footnote[vol][The incompressible condition of a fluid makes it possible to express the integral of the pressure exerted on a particle simply by multiplying it by volume.]
 
-==== 粘性力
-流体粒子にかかる力の２つ目は、粘性力です。
-粘性(ねばりけ)のある流体とは、はちみつや溶かしたチョコレートなどに代表される、変形しづらい流体のことを指します。
-粘性があるという言葉を粒子法の表現に当てはめてみると、
-@<b>{粒子の速度は、周りの粒子速度の平均をとりやすい}ということになります。
-前章で述べられた通り、周囲の平均をとるという演算は、ラプラシアンを用いて行うことができます。
+==== Viscous force
+The second force on fluid particles is viscous force.
+A viscous (sticky) fluid is a fluid that is difficult to deform, such as honey and melted chocolate.
+Applying the word viscous to the expression of the particle method,
+@<b>{The particle velocity is easy to average the surrounding particle velocity.}It means that.
+As mentioned in the previous chapter, the operation of taking the average of the surroundings can be done using Laplacian.
 
-粘性の度合いを@<b>{動粘性係数}@<m>{\mu}を用いて表すと、@<m>{\mu \nabla \cdot \nabla \overrightarrow{u\}}と表す事ができます。
+The degree of viscosity@<b>{Kinematic viscosity coefficient}@<m>{\mu}When expressed using@<m>{\mu \nabla \cdot \nabla \overrightarrow{u\}}Can be expressed as
 
-==== 圧力・粘性力・外力の統合
-これらの力を運動方程式@<m>{m \overrightarrow{a\} = \overrightarrow{f\}}に当てはめて整理すると、
+==== Integration of pressure, viscous force, and external force
+Equations of motion for these forces@<m>{m \overrightarrow{a\} = \overrightarrow{f\}}If you apply it to
 //texequation{
   m \dfrac{D\overrightarrow{u}}{Dt} = - V \nabla p + V \mu \nabla \cdot \nabla \overrightarrow{u} + m\overrightarrow{g}
 //}
-ここで、@<m>{m}は@<m>{\rho V}であることから、変形して(@<m>{V}が打ち消されます)
+here,@<m>{m}は@<m>{\rho V}Since it is(@<m>{V}Will be canceled)
 //texequation{
   \rho \dfrac{D\overrightarrow{u}}{Dt} = - \nabla p + \mu \nabla \cdot \nabla \overrightarrow{u} + \rho \overrightarrow{g}
 //}
-両辺@<m>{\rho}で割り、
+Both sides@<m>{\rho}Divide by
 //texequation{
   \dfrac{D\overrightarrow{u}}{Dt} = - \dfrac{1}{\rho}\nabla p + \dfrac{\mu}{\rho} \nabla \cdot \nabla \overrightarrow{u} + \overrightarrow{g}
 //}
-最後に、粘性項の係数@<m>{\dfrac{\mu\}{\rho\}}に@<m>{\nu}を導入して、
+Finally, the coefficient of the viscosity term@<m>{\dfrac{\mu\}{\rho\}}に@<m>{\nu}Introduced
 //texequation{
   \dfrac{D\overrightarrow{u}}{Dt} = - \dfrac{1}{\rho}\nabla p + \nu \nabla \cdot \nabla \overrightarrow{u} + \overrightarrow{g}
 //}
-となり、はじめに挙げたNS方程式を導出することができました。
+Then, I was able to derive the NS equation mentioned at the beginning.
 
-=== 粒子法における移流の表現
-粒子法では、粒子自体が流体の観測点を表現しているので、移流項の計算は単に粒子位置を移動させるだけで完了します。
-実際の時間微分の計算では、無限に小さい時間を用いますが、
-コンピューターでの計算では無限を表現できないため、十分小さい時間@<m>{\Delta t}を用いて微分を表現します。
-これを差分と言い、@<m>{\Delta t}を小さくすればするほど、正確な計算を行うことができます。
+=== Representation of advection in the particle method.
+In the particle method, the particles themselves represent the observation points of the fluid, so the calculation of the advection term is completed simply by moving the particle position.
+In the actual calculation of time derivative, infinitely small time is used,
+Infinite time cannot be expressed by computer calculation, so the time is small enough.@<m>{\Delta t}Is used to express the derivative.
+This is called difference,@<m>{\Delta t}The smaller is, the more accurate the calculation can be made.
 
-加速度について、差分の表現を導入すると、
+Introducing the difference expression for acceleration,
 //texequation{
   \overrightarrow{a} = \dfrac{D\overrightarrow{u}}{Dt} \equiv \frac{\Delta \overrightarrow{u}}{\Delta t}
 //}
-となります。
-よって速度の増分@<m>{\Delta \overrightarrow{u\}}は、
+Will be.
+Therefore speed increment@<m>{\Delta \overrightarrow{u\}}Is
 //texequation{
 \Delta \overrightarrow{u} = \Delta t \overrightarrow{a}
 //}
-となり、また、位置の増分についても同様に、
+And for position increments as well,
 //texequation{
   \overrightarrow{u} = \frac{\partial \overrightarrow{x}}{\partial t} \equiv \frac{\Delta \overrightarrow{x}}{\Delta t}
 //}
-より、
+Than,
 //texequation{
 \Delta \overrightarrow{x} = \Delta t \overrightarrow{u}
 //}
-となります。
+Will be.
 
-この結果を利用することで、次のフレームでの速度ベクトルと位置ベクトルを算出できます。
-現在のフレームでの粒子速度が@<m>{\overrightarrow{u\}_n}であるとすると、
-次のフレームでの粒子速度は@<m>{\overrightarrow{u\}_{n+1\}}で、
+You can use this result to calculate the velocity and position vectors for the next frame.
+The particle velocity at the current frame@<m>{\overrightarrow{u\}_n}, Then
+The particle velocity in the next frame is@<m>{\overrightarrow{u\}_{n+1\}}so,
 //texequation{
 \overrightarrow{u}_{n+1} = \overrightarrow{u}_n + \Delta \overrightarrow{u} = \overrightarrow{u}_n + \Delta t \overrightarrow{a}
 //}
-と表せます。
+Can be expressed as
 
-現在のフレームでの粒子位置が@<m>{\overrightarrow{x\}_n}であるとすると、
-次のフレームでの粒子位置は@<m>{\overrightarrow{x\}_{n+1\}}で、
+The particle position in the current frame@<m>{\overrightarrow{x\}_n}, Then
+The particle position in the next frame is@<m>{\overrightarrow{x\}_{n+1\}}so,
 //texequation{
 \overrightarrow{x}_{n+1} = \overrightarrow{x}_n + \Delta \overrightarrow{x} = \overrightarrow{x}_n + \Delta t \overrightarrow{u}
 //}
-と表せます。
+Can be expressed as
 
-この手法は、前進オイラー法と呼ばれます。
-これを毎フレーム繰り返すことで、各時刻での粒子の移動を表現することができます。
+This method is called the forward Euler method.
+By repeating this for each frame, the movement of particles at each time can be expressed.
 
 
-== SPH法による流体シミュレーション
-前節では、粒子法におけるNS方程式の導出方法について解説しました。
-もちろん、これらの微分方程式をコンピュータでそのまま解くことはできませんので、何らかの近似をしてあげる必要があります。
-その手法として、CG分野でよく用いられる@<b>{SPH法}について解説します。
+== Fluid simulation by SPH method
+In the previous section, we explained how to derive the NS equation in the particle method.
+Of course, these differential equations cannot be solved directly by computer, so some kind of approximation is needed.
+As a method, I will explain @<b>{SPH method} which is often used in the CG field.
 
-SPH法は、本来宇宙物理学における天体同士の衝突シミュレーションに用いられていた手法ですが、1996年にDesbrunら@<fn>{desbrun}によってCGにおける流体シミュレーションにも応用されました。
-また、並列化も容易で、現在のGPUでは大量の粒子の計算をリアルタイムに行うことが可能です。
-コンピュータシミュレーションでは、連続的な物理量を離散化して計算を行う必要がありますが、
-この離散化を、@<b>{重み関数}と呼ばれる関数を用いて行う手法をSPH法と呼びます。
+The SPH method was originally used for the simulation of collisions between celestial bodies in astrophysics, but was also applied to fluid simulation in CG by Desbrun et al. @<fn>{desbrun} in 1996.
+In addition, parallelization is easy, and with the current GPU, it is possible to calculate large numbers of particles in real time.
+In computer simulation, it is necessary to discretize continuous physical quantities for calculation,
+This discretization is@<b>{Weight function}The method that uses a function called is called the SPH method.
 
 //footnote[desbrun][Desbrun and Cani, Smoothed Particles: A new paradigm for animating highly deformable bodies, Eurographics Workshop on Computer Animation and Simulation (EGCAS), 1996.]
 
-=== 物理量の離散化
+=== Discretization of physical quantities
 
-SPH法では、粒子一つ一つが影響範囲を持っていて、他の粒子と距離が近いほどその粒子の影響が大きく受けるという動作をします。
-この影響範囲を図示すると@<img>{2dkernel}のようになります。
-//image[2dkernel][2次元の重み関数][scale=0.5]{
+In the SPH method, each particle has a range of influence, and the closer the distance to other particles, the greater the influence of that particle.
+When this influence range is illustrated@<img>{2dkernel}It looks like.
+//image[2dkernel][2-D weight function][scale=0.5]{
 //}
-この関数を@<b>{重み関数}@<fn>{weight_fn}と呼びます。
+This function@<b>{Weight function}@<fn>{weight_fn}I call it.
 
-//footnote[weight_fn][通常この関数はカーネル関数とも呼ばれますが、ComputeShaderにおけるカーネル関数と区別するためこの呼び方にしています。]
+//footnote[weight_fn][Usually, this function is also called a kernel function, but this name is used to distinguish it from the kernel function in ComputeShader.]
 
-SPH法における物理量を@<m>{\phi}とすると、重み関数を用いて以下のように離散化されます。
+Physical quantity in SPH method@<m>{\phi}Then, it is discretized using the weight function as follows.
 //texequation{
   \phi(\overrightarrow{x}) = \sum_{j \in N}m_j\frac{\phi_j}{\rho_j}W(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-@<m>{N, m, \rho, h}はそれぞれ、近傍粒子の集合、粒子の質量、粒子の密度、重み関数の影響半径です。
-また、関数@<m>{W}が先ほど述べた重み関数になります。
+@<m>{N, m, \rho, h}Are the collection of neighboring particles, particle mass, particle density, and radius of influence of the weighting function, respectively.
+Also, the function @<m>{W} is the weighting function mentioned earlier.
 
-さらに、この物理量には、勾配とラプラシアンなどの偏微分演算が適用でき、
-勾配は、
+Furthermore, partial differential operations such as gradient and Laplacian can be applied to this physical quantity,
+The gradient is
 //texequation{
   \nabla \phi(\overrightarrow{x}) = \sum_{j \in N}m_j\frac{\phi_j}{\rho_j} \nabla W(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-ラプラシアンは、
+Laplacian is
 //texequation{
   \nabla^2 \phi(\overrightarrow{x}) = \sum_{j \in N}m_j\frac{\phi_j}{\rho_j} \nabla^2 W(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-と表せます。
-式からわかるように、物理量の勾配及びラプラシアンは、重み関数に対してのみ適用されるイメージになります。
-重み関数@<m>{W}は、求めたい物理量によって異なるものを使用しまが、この理由の説明については割愛@<fn>{fujisawa}します。
-#@#重み関数のグラフ画像
-//footnote[fujisawa]["CGのための物理シミュレーションの基礎 - 藤澤誠" で詳しく解説されています。]
+Can be expressed as
+As you can see from the formula, the gradient of the physical quantity and the Laplacian are images that are applied only to the weighting function.
+Weight function@<m>{W}Uses different values ​​depending on the physical quantity you want to find, but I will omit the explanation for this reason.@<fn>{fujisawa}To do.
+#@#Graph image of weight function
+//footnote[fujisawa]["Basics of physical simulation for CG: Makoto Fujisawa".]
 
-=== 密度の離散化
-流体の粒子の密度は、先ほどの重み関数で離散化した物理量の式を利用して、
+=== Discretization of density
+The density of fluid particles can be calculated using the equation of physical quantity discretized by the weighting function.
 //texequation{
   \rho(\overrightarrow{x}) = \sum_{j \in N}m_jW_{poly6}(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-と与えられます。
-ここで、利用する重み関数@<m>{W}は、以下で与えられます。
-//image[poly6][Poly6重み関数][scale=0.7]{
+Is given.
+Where the weighting function to use@<m>{W}Is given by
+//image[poly6][Poly6 weight function][scale=0.7]{
 //}
 
-=== 粘性項の離散化
-粘性項を離散化も密度の場合と同様重み関数を利用して、
+=== Discretization of viscosity term
+The viscous term is discretized using the weighting function as in the case of density,
 //texequation{
   f_{i}^{visc} = \mu\nabla^2\overrightarrow{u}_i = \mu \sum_{j \in N}m_j\frac{\overrightarrow{u}_j - \overrightarrow{u}_i}{\rho_j} \nabla^2 W_{visc}(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-と表されます。
-ここで、重み関数のラプラシアン@<m>{\nabla^2 W_{visc\}}は、以下で与えられます。
-//image[visc][Viscosity重み関数のラプラシアン][scale=0.7]{
+It is expressed as.
+Where the Laplacian of the weighting function@<m>{\nabla^2 W_{visc\}}Is given by
+//image[visc][Viscosity Laplacian of weighting function][scale=0.7]{
 //}
 
-=== 圧力項の離散化
-同様に、圧力項を離散化していきます。
+=== Discretization of pressure term
+Similarly, discretize the pressure term.
 //texequation{
   f_{i}^{press} = - \frac{1}{\rho_i} \nabla p_i = - \frac{1}{\rho_i} \sum_{j \in N}m_j\frac{p_j - p_i}{2\rho_j} \nabla W_{spiky}(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-ここで、重み関数の勾配@<m>{W_{spiky\}}は以下で与えられます。
-//image[spiky][Spiky重み関数の勾配][scale=0.7]{
+Where the gradient of the weighting function@<m>{W_{spiky\}}Is given by
+//image[spiky][Spiky weight function gradient][scale=0.7]{
 //}
 
-この時、粒子の圧力は事前に、Tait方程式と呼ばれる、
+At this time, the particle pressure is called Tait equation in advance,
 //texequation{
     p = B\left\{\left(\frac{\rho}{\rho_0}\right)^\gamma - 1\right\}
 //}
-で算出されています。 ここで、@<m>{B}は気体定数です。
-非圧縮性を保証するためには、本来ポアソン方程式を解かなければならないのですが、リアルタイム計算には向きません。
-その代わりSPH法@<fn>{wcsph}では、近似的に非圧縮性を確保する点で格子法よりも圧力項の計算が苦手であるといわれます。
+It is calculated by. Where @<m>{B} is the gas constant.
+In order to guarantee incompressibility, it is necessary to solve the Poisson equation, but it is not suitable for real-time calculation.
+Instead, SPH method@<fn>{wcsph}Then, it is said that the calculation of the pressure term is weaker than the lattice method in terms of securing incompressibility approximately.
 
-//footnote[wcsph][Tait方程式を用いた圧力計算を行うSPH法を、特別にWCSPH法と呼びます。]
+//footnote[wcsph][The SPH method that calculates pressure using the Tait equation is called the WCSPH method.]
 
-== SPH法の実装
-サンプルはこちらのリポジトリ(@<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming})のAssets/SPHFluid以下に掲載しています。
-今回の実装では、極力シンプルにSPHの手法を解説するために高速化や数値安定性は考慮していませんのでご了承ください。
+== Implementation of SPH method
+Sample here(@<href>{https://github.com/IndieVisualLab/UnityGraphicsProgramming})Assets/SPH Fluid is listed below.
+Please note that this implementation does not consider speedup or numerical stability in order to explain the SPH method as simply as possible.
 
-=== パラメータ
-シミュレーションに使用する諸々のパラメータの説明については、コード内コメントに記載しています。
-//listnum[parameters][シミュレーションに使用するパラメータ(FluidBase.cs)][csharp]{
-NumParticleEnum particleNum = NumParticleEnum.NUM_8K;    // 粒子数
-float smoothlen = 0.012f;               // 粒子半径
-float pressureStiffness = 200.0f;       // 圧力項係数
-float restDensity = 1000.0f;            // 静止密度
-float particleMass = 0.0002f;           // 粒子質量
-float viscosity = 0.1f;                 // 粘性係数
-float maxAllowableTimestep = 0.005f;    // 時間刻み幅
-float wallStiffness = 3000.0f;          // ペナルティ法の壁の力
-int iterations = 4;                     // イテレーション回数
-Vector2 gravity = new Vector2(0.0f, -0.5f);     // 重力
-Vector2 range = new Vector2(1, 1);              // シミュレーション空間
-bool simulate = true;                           // 実行 or 一時停止
+=== The parameter
+The comments in the code describe the various parameters used for the simulation.
+//listnum[parameters][Parameters used for simulation(FluidBase.cs)][csharp]{
+NumParticleEnum particleNum = NumParticleEnum.NUM_8K;    // Number of particles
+float smoothlen = 0.012f;               // Particle radius
+float pressureStiffness = 200.0f;       // Pressure term coefficient
+float restDensity = 1000.0f;            // Resting density
+float particleMass = 0.0002f;           // Particle mass
+float viscosity = 0.1f;                 // Viscosity coefficient
+float maxAllowableTimestep = 0.005f;    // Step size
+float wallStiffness = 3000.0f;          // Power of Penalty Law Wall
+int iterations = 4;                     // Number of iterations
+Vector2 gravity = new Vector2(0.0f, -0.5f);     // gravity
+Vector2 range = new Vector2(1, 1);              // Simulation space
+bool simulate = true;                           // Execute or pause
 
-int numParticles;              // パーティクルの個数
-float timeStep;                // 時間刻み幅
-float densityCoef;             // Poly6カーネルの密度係数
-float gradPressureCoef;        // Spikyカーネルの圧力係数
-float lapViscosityCoef;        // Laplacianカーネルの粘性係数
+int numParticles;              // Number of particles
+float timeStep;                // Step size
+float densityCoef;             // Density coefficient of Poly6 kernel
+float gradPressureCoef;        // Pressure coefficient of Spiky kernel
+float lapViscosityCoef;        // Laplacian kernel viscosity coefficient
 //}
 
-今回のデモシーンでは、コードに記載されているパラメータの初期化値とは異なる値をインスペクタで設定していますので注意してください。
+Please note that in this demo scene, the inspector is set to a value different from the initialization value of the parameter described in the code.
 
-=== SPH重み関数の係数の計算
-重み関数の係数はシミュレーション中で変化しないため、初期化時にCPU側で計算しておきます。
-(ただし、実行途中でパラメータを編集する可能性も踏まえてUpdate関数内で更新しています)
+=== Compute SPH weight function coefficients
+The coefficient of the weight function does not change during the simulation, so it should be calculated on the CPU side at initialization.
+(However, it is updated in the Update function considering the possibility of editing the parameter during execution)
 
-今回、粒子ごとの質量はすべて一定にしているので、物理量の式内にある質量@<m>{m}はシグマの外に出て以下になります。
+This time, the mass of each particle is kept constant, so the mass @<m>{m} in the physical quantity formula goes out of the sigma and becomes the following.
 //texequation{
   \phi(\overrightarrow{x}) = m \sum_{j \in N}\frac{\phi_j}{\rho_j}W(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-そのため、係数計算の中に質量を含めてしまうことができます。
+Therefore, the mass can be included in the coefficient calculation.
 
-重み関数の種類で係数も変化してきますから、それぞれに関して係数を計算します。
+Since the coefficient changes depending on the type of weighting function, calculate the coefficient for each.
 
-//listnum[coefs][重み関数の係数の事前計算(FluidBase.cs)][csharp]{
+//listnum[coefs][Precompute coefficients for weighting function(FluidBase.cs)][csharp]{
 densityCoef = particleMass * 4f / (Mathf.PI * Mathf.Pow(smoothlen, 8));
 gradPressureCoef
     = particleMass * -30.0f / (Mathf.PI * Mathf.Pow(smoothlen, 5));
@@ -336,8 +335,8 @@ lapViscosityCoef
     = particleMass * 20f / (3 * Mathf.PI * Mathf.Pow(smoothlen, 5));
 //}
 
-最終的に、これらのCPU側で計算した係数(及び各種パラメータ)をGPU側の定数バッファに格納します。
-//listnum[setconst][ComputeShaderの定数バッファに値を転送する(FluidBase.cs)][csharp]{
+Finally, the coefficients (and various parameters) calculated by these CPUs To GPU Store in the constant buffer on the side.
+//listnum[setconst][ComputeShader Transfer the value to the constant buffer of(FluidBase.cs)][csharp]{
 fluidCS.SetInt("_NumParticles", numParticles);
 fluidCS.SetFloat("_TimeStep", timeStep);
 fluidCS.SetFloat("_Smoothlen", smoothlen);
@@ -352,68 +351,68 @@ fluidCS.SetVector("_Range", range);
 fluidCS.SetVector("_Gravity", gravity);
 //}
 
-//listnum[const][ComputeShaderの定数バッファ(SPH2D.compute)][csharp]{
-int   _NumParticles;      // 粒子数
-float _TimeStep;          // 時間刻み幅(dt)
-float _Smoothlen;         // 粒子半径
-float _PressureStiffness; // Beckerの係数
-float _RestDensity;       // 静止密度
-float _DensityCoef;       // 密度算出時の係数
-float _GradPressureCoef;  // 圧力算出時の係数
-float _LapViscosityCoef;  // 粘性算出時の係数
-float _WallStiffness;     // ペナルティ法の押し返す力
-float _Viscosity;         // 粘性係数
-float2 _Gravity;          // 重力
-float2 _Range;            // シミュレーション空間
+//listnum[const][ComputeShader Constant buffer(SPH2D.compute)][csharp]{
+int   _NumParticles;      // Number of particles
+float _TimeStep;          // Step size(dt)
+float _Smoothlen;         // Particle radius
+float _PressureStiffness; // Becker Coefficient of
+float _RestDensity;       // Resting density
+float _DensityCoef;       // Coefficient for calculating density
+float _GradPressureCoef;  // Coefficient when calculating pressure
+float _LapViscosityCoef;  // Coefficient when calculating viscosity
+float _WallStiffness;     // Force of pushing back the penalty method
+float _Viscosity;         // Viscosity coefficient
+float2 _Gravity;          // gravity
+float2 _Range;            // Simulation space
 
-float3 _MousePos;         // マウス位置
-float _MouseRadius;       // マウスインタラクションの半径
-bool _MouseDown;          // マウスが押されているか
+float3 _MousePos;         // Mouse position
+float _MouseRadius;       // Radius of mouse interaction
+bool _MouseDown;          // Is the mouse pressed?
 //}
 
 
-=== 密度の計算
-//listnum[density_kernel][密度の計算を行うカーネル関数(SPH2D.compute)][c]{
+=== Density calculation
+//listnum[density_kernel][Kernel function for calculating density(SPH2D.compute)][c]{
 [numthreads(THREAD_SIZE_X, 1, 1)]
 void DensityCS(uint3 DTid : SV_DispatchThreadID) {
-	uint P_ID = DTid.x;	// 現在処理しているパーティクルID
+	uint P_ID = DTid.x;	// Particle ID currently being processed
 
 	float h_sq = _Smoothlen * _Smoothlen;
 	float2 P_position = _ParticlesBufferRead[P_ID].position;
 
-	// 近傍探索(O(n^2))
+	// Neighborhood search(O(n^2))
 	float density = 0;
 	for (uint N_ID = 0; N_ID < _NumParticles; N_ID++) {
-		if (N_ID == P_ID) continue;	// 自身の参照回避
+		if (N_ID == P_ID) continue;	// Avoid referencing yourself
 
 		float2 N_position = _ParticlesBufferRead[N_ID].position;
 
 		float2 diff = N_position - P_position;    // 粒子距離
 		float r_sq = dot(diff, diff);             // 粒子距離の2乗
 
-		// 半径内に収まっていない粒子は除外
+		// Exclude particles that are not within the radius
 		if (r_sq < h_sq) {
-            // 計算には2乗しか含まれないのでルートをとる必要なし
+            // No need to take a route as the calculation only includes squares
 			density += CalculateDensity(r_sq);
 		}
 	}
 
-	// 密度バッファを更新
+	// Update density buffer
 	_ParticlesDensityBufferWrite[P_ID].density = density;
 }
 //}
 
-本来であれば粒子を全数調査せず、適切な近傍探索アルゴリズムを用いて近傍粒子を探す必要がありますが、
-今回の実装では簡単のために全数調査を行っています(10行目のforループ)。
-また、自分と相手粒子との距離計算を行うため、11行目で自身の粒子同士で計算を行うのを回避しています。
+Originally, it is necessary to search for neighboring particles using an appropriate neighborhood search algorithm without exhaustive examination of all particles.
+For the sake of simplicity, this implementation implements a 100% survey (for loop on line 10).
+Also, since the distance between yourself and the other particle is calculated, you avoid doing calculations between your own particles on line 11.
 
-重み関数の有効半径@<m>{h}による場合分けは19行目のif文で実現します。
-密度の足し合わせ(シグマの計算)は、9行目で0で初期化しておいた変数に対してシグマ内部の計算結果を加算していくことで実現します。
-ここで、もう一度密度の計算式を示します。
+Effective radius of weight function@<m>{h}It is realized by the if statement on the 19th line.
+Addition of densities (calculation of sigma) is realized by adding the calculation result inside sigma to the variable initialized with 0 in the 9th line.
+Here is the density formula again.
 //texequation{
   \rho(\overrightarrow{x}) = \sum_{j \in N}m_jW_{poly6}(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-密度の計算は上式のとおり、Poly6重み関数を用います。 Poly6重み関数は@<list>{density_weight}で計算します。
+The density calculation uses the Poly6 weighting function as shown in the above formula. Poly6 weighting function is@<list>{density_weight}Calculate with.
 //listnum[density_weight][密度の計算(SPH2D.compute)][c]{
 inline float CalculateDensity(float r_sq) {
 	const float h_sq = _Smoothlen * _Smoothlen;
@@ -421,43 +420,43 @@ inline float CalculateDensity(float r_sq) {
 }
 //}
 
-最終的に@<list>{density_kernel}の25行目で書き込み用バッファに書き込みます。
+Finally@<list>{density_kernel}In the 25th line of, write to the write buffer.
 
-=== 粒子単位の圧力の計算
-//listnum[press_kernel][粒子毎の圧力を計算する重み関数(SPH2D.compute)][c]{
+=== Calculation of pressure in particles
+//listnum[press_kernel][Weight function to calculate the pressure for each particle(SPH2D.compute)][c]{
 [numthreads(THREAD_SIZE_X, 1, 1)]
 void PressureCS(uint3 DTid : SV_DispatchThreadID) {
-	uint P_ID = DTid.x;	// 現在処理しているパーティクルID
+	uint P_ID = DTid.x;	// Particle ID currently being processed
 
 	float  P_density = _ParticlesDensityBufferRead[P_ID].density;
 	float  P_pressure = CalculatePressure(P_density);
 
-	// 圧力バッファを更新
+	// Update pressure buffer
 	_ParticlesPressureBufferWrite[P_ID].pressure = P_pressure;
 }
 //}
 
-圧力項を解く前に、粒子単位の圧力を算出しておき、後の圧力項の計算コストを下げます。
-先程も述べましたが、圧力の計算では本来、以下の式のようなポアソン方程式と呼ばれる方程式を解く必要があります。
+Before solving the pressure term, calculate the pressure in particle units, and reduce the calculation cost of the pressure term after that.
+As I mentioned earlier, it is necessary to solve the equation called Poisson's equation like the following in the calculation of pressure.
 //texequation{
     \nabla^2 p = \rho \frac{\nabla \overrightarrow{u}}{\Delta t}
 //}
-しかし、コンピュータで正確にポアソン方程式を解く操作は非常に計算コストが高いため、以下のTait方程式を用いて近似的に求めます。
+However, the operation to solve the Poisson equation accurately with a computer is very expensive, so it is approximately calculated using the following Tait equation.
 //texequation{
     p = B\left\{\left(\frac{\rho}{\rho_0}\right)^\gamma - 1\right\}
 //}
-//listnum[tait][Tait方程式の実装(SPH2D.compute)][c]{
+//listnum[tait][Implementation of Tait equation(SPH2D.compute)][c]{
 inline float CalculatePressure(float density) {
 	return _PressureStiffness * max(pow(density / _RestDensity, 7) - 1, 0);
 }
 //}
 
 
-=== 圧力項・粘性項の計算
-//listnum[force_kernel][圧力項・粘性項を計算するカーネル関数(SPH2D.compute)][c]{
+=== Calculation of pressure and viscosity terms
+//listnum[force_kernel][Kernel function that calculates pressure and viscosity terms(SPH2D.compute)][c]{
 [numthreads(THREAD_SIZE_X, 1, 1)]
 void ForceCS(uint3 DTid : SV_DispatchThreadID) {
-	uint P_ID = DTid.x; // 現在処理しているパーティクルID
+	uint P_ID = DTid.x; // Particle ID currently being processed
 
 	float2 P_position = _ParticlesBufferRead[P_ID].position;
 	float2 P_velocity = _ParticlesBufferRead[P_ID].velocity;
@@ -466,18 +465,18 @@ void ForceCS(uint3 DTid : SV_DispatchThreadID) {
 
 	const float h_sq = _Smoothlen * _Smoothlen;
 
-	// 近傍探索(O(n^2))
+	// Neighborhood search(O(n^2))
 	float2 press = float2(0, 0);
 	float2 visco = float2(0, 0);
 	for (uint N_ID = 0; N_ID < _NumParticles; N_ID++) {
-		if (N_ID == P_ID) continue;	// 自身を対象とした場合スキップ
+		if (N_ID == P_ID) continue;	// Skip if you target yourself
 
 		float2 N_position = _ParticlesBufferRead[N_ID].position;
 
 		float2 diff = N_position - P_position;
 		float r_sq = dot(diff, diff);
 
-		// 半径内に収まっていない粒子は除外
+		// Exclude particles that are not within the radius
 		if (r_sq < h_sq) {
 			float  N_density
                     = _ParticlesDensityBufferRead[N_ID].density;
@@ -487,29 +486,29 @@ void ForceCS(uint3 DTid : SV_DispatchThreadID) {
                     = _ParticlesBufferRead[N_ID].velocity;
 			float  r = sqrt(r_sq);
 
-			// 圧力項
+			// Pressure item
 			press += CalculateGradPressure(...);
 
-			// 粘性項
+			// Sticky item
 			visco += CalculateLapVelocity(...);
 		}
 	}
 
-	// 統合
+	// Integration
 	float2 force = press + _Viscosity * visco;
 
-	// 加速度バッファの更新
+	// Acceleration buffer update
 	_ParticlesForceBufferWrite[P_ID].acceleration = force / P_density;
 }
 //}
 
-圧力項、粘性項の計算も、密度の計算方法と同様に行います。
+The pressure and viscosity terms are calculated in the same way as the density calculation method.
 
-初めに、以下の圧力項による力の計算を31行目にて行っています。
+First, we calculate the force by the following pressure term in line 31.
 //texequation{
   f_{i}^{press} = - \frac{1}{\rho_i} \nabla p_i = - \frac{1}{\rho_i} \sum_{j \in N}m_j\frac{p_j - p_i}{2\rho_j} \nabla W_{press}(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-シグマの中身の計算は以下の関数で行われます。
+The following function calculates the contents of Sigma.
 //listnum[press_weight][圧力項の要素の計算(SPH2D.compute)][c]{
 inline float2 CalculateGradPressure(...) {
 	const float h = _Smoothlen;
@@ -519,12 +518,12 @@ inline float2 CalculateGradPressure(...) {
 }
 //}
 
-次に、以下の粘性項による力の計算を34行目で行っています。
+Next, the calculation of the force by the following viscous term is performed on the 34th line.
 //texequation{
   f_{i}^{visc} = \mu\nabla^2\overrightarrow{u}_i = \mu \sum_{j \in N}m_j\frac{\overrightarrow{u}_j - \overrightarrow{u}_i}{\rho_j} \nabla^2 W_{visc}(\overrightarrow{x_j} - \overrightarrow{x}, h)
 //}
-シグマの中身の計算は以下の関数で行われます。
-//listnum[visc_weight][粘性項の要素の計算(SPH2D.compute)][c]{
+The following function calculates the contents of Sigma.
+//listnum[visc_weight][Calculate elements of viscosity term(SPH2D.compute)][c]{
 inline float2 CalculateLapVelocity(...) {
 	const float h = _Smoothlen;
 	float2 vel_diff = (N_velocity - P_velocity);
@@ -532,29 +531,29 @@ inline float2 CalculateLapVelocity(...) {
 }
 //}
 
-最後に、@<list>{force_kernel}の39行目にて圧力項と粘性項で算出した力を足し合わせ、最終的な出力としてバッファに書き込んでいます。
+Finally,@<list>{force_kernel}At line 39, the forces calculated by the pressure term and the viscosity term are added together and written in the buffer as the final output.
 
-=== 衝突判定と位置更新
-//listnum[integrate_kernel][衝突判定と位置更新を行うカーネル関数(SPH2D.compute)][c]{
+=== Collision judgment and position update
+//listnum[integrate_kernel][Kernel function for collision detection and position update(SPH2D.compute)][c]{
 [numthreads(THREAD_SIZE_X, 1, 1)]
 void IntegrateCS(uint3 DTid : SV_DispatchThreadID) {
-	const unsigned int P_ID = DTid.x; // 現在処理しているパーティクルID
+	const unsigned int P_ID = DTid.x; // Particle ID currently being processed
 
-	// 更新前の位置と速度
+	// Position and speed before update
 	float2 position = _ParticlesBufferRead[P_ID].position;
 	float2 velocity = _ParticlesBufferRead[P_ID].velocity;
 	float2 acceleration = _ParticlesForceBufferRead[P_ID].acceleration;
 
-	// マウスインタラクション
+	// Mouse interaction
 	if (distance(position, _MousePos.xy) < _MouseRadius && _MouseDown) {
 		float2 dir = position - _MousePos.xy;
 		float pushBack = _MouseRadius-length(dir);
 		acceleration += 100 * pushBack * normalize(dir);
 	}
 
-	// 衝突判定を書くならここ -----
+	// If you want to write collision judgment, here -----
 
-	// 壁境界(ペナルティ法)
+	// Wall boundary (penalty method)
 	float dist = dot(float3(position, 1), float3(1, 0, 0));
 	acceleration += min(dist, 0) * -_WallStiffness * float2(1, 0);
 
@@ -567,32 +566,32 @@ void IntegrateCS(uint3 DTid : SV_DispatchThreadID) {
 	dist = dot(float3(position, 1), float3(0, -1, _Range.y));
 	acceleration += min(dist, 0) * -_WallStiffness * float2(0, -1);
 
-	// 重力の加算
+	// Addition of gravity
 	acceleration += _Gravity;
 
-	// 前進オイラー法で次の粒子位置を更新
+	// Update the next particle position with the forward Euler method
 	velocity += _TimeStep * acceleration;
 	position += _TimeStep * velocity;
 
-	// パーティクルのバッファ更新
+	// Particle buffer update
 	_ParticlesBufferWrite[P_ID].position = position;
 	_ParticlesBufferWrite[P_ID].velocity = velocity;
 }
 //}
 
-壁との衝突判定をペナルティ法を用いて行います(19-30行目)。
-ペナルティ法とは、境界位置からはみ出した分だけ強い力で押し返すという手法になります。
+Use the penalty method to judge collision with a wall(19-30 Line)。
+The penalty method is a method of pushing back with a strong force as much as it sticks out from the boundary position.
 
-本来は壁との衝突判定の前に障害物との衝突判定も行うのですが、今回の実装ではマウスとのインタラクションを行うようにしています(213-218行目)。
-マウスが押されていれば、指定された力でマウス位置から遠ざかるような力を加えています。
+Originally, the collision judgment with the obstacle is also performed before the collision judgment with the wall, but in this implementation, the interaction with the mouse is performed.(213-218 Line)。
+If the mouse is pressed, the specified force is applied to move away from the mouse position.
 
-33行目にて外力である重力を加算しています。
-重力の値をゼロにすると無重力状態になり、面白い視覚効果が得られます。
-また、位置の更新は前述の前進オイラー法で行い(36-37行目)、最終的な結果をバッファに書き込みます。
+In line 33, the external force of gravity is added.
+Setting the gravity value to zero creates weightlessness, which is an interesting visual effect.
+In addition, the position is updated by the forward Euler method described above.(36-37 Line)、Write the final result to the buffer.
 
 
-=== シミュレーションメインルーチン
-//listnum[routine][シミュレーションの主要関数(FluidBase.cs)][csharp]{
+=== Simulation main routine
+//listnum[routine][Simulation main functions(FluidBase.cs)][csharp]{
 private void RunFluidSolver() {
 
   int kernelID = -1;
@@ -628,28 +627,28 @@ private void RunFluidSolver() {
   SwapComputeBuffer(ref particlesBufferRead, ref particlesBufferWrite);
 }
 //}
-これまでに述べたComputeShaderのカーネル関数を、毎フレーム呼び出す部分です。
-それぞれのカーネル関数に対して適切なComputeBufferを与えてあげます。
+This is the part that calls the kernel function of ComputeShader described so far every frame.
+Give an appropriate ComputeBuffer for each kernel function.
 
-ここで、タイムステップ幅@<m>{\Delta t}を小さくすればするほどシミュレーションの誤差が出にくくなることを思い出してみてください。
-60FPSで実行する場合、@<m>{\Delta t = 1 / 60}となりますが、これでは誤差が大きく出てしまい粒子が爆発してしまいます。
-さらに、@<m>{\Delta t = 1 / 60}より小さいタイムステップ幅をとると、1フレーム当たりの時間の進み方が実時間より遅くなり、スローモーションになってしまいます。
-これを回避するには、@<m>{\Delta t = 1 / (60 \times {iterarion\})}として、メインルーチンを1フレームにつきiterarion回回します。
+Where time step width@<m>{\Delta t}Recall that the smaller the, the less error in the simulation.
+When running at 60FPS,@<m>{\Delta t = 1 / 60}However, this will cause a large error and the particles will explode.
+further,@<m>{\Delta t = 1 / 60}If the time step width is smaller, the progress of time per frame will be slower than the actual time, resulting in slow motion.
+To avoid this,@<m>{\Delta t = 1 / (60 \times {iterarion\})}As for, iterarion turns the main routine once per frame.
 
-//listnum[iteration][主要関数のイテレーション(FluidBase.cs)][csharp]{
-// 計算精度を上げるために時間刻み幅を小さくして複数回イテレーションする
+//listnum[iteration][Iteration of major functions(FluidBase.cs)][csharp]{
+// Iterate multiple times with smaller time step to improve calculation accuracy
 for (int i = 0; i<iterations; i++) {
     RunFluidSolver();
 }
 //}
-こうすることで、小さいタイムステップ幅で実時間のシミュレーションを行うことができます。
+By doing this, you can perform real-time simulation with a small time step width.
 
-=== バッファの使い方
-通常のシングルアクセスのパーティクルシステムとは異なり、
-粒子同士が相互作用しますから、計算途中に他のデータが書き換わってしまっては困ります。
-これを回避するために、GPUで計算を行っている際に値を書き換えない読み込み用バッファと書き込み用バッファの2つを用意します。
-これらのバッファを毎フレーム入れ替えることで、競合なくデータを更新できます。
-//listnum[swap][バッファを入れ替える関数(FluidBase.cs)][csharp]{
+=== How to use the buffer
+Unlike the normal single access particle system,
+Since particles interact with each other, it would be a problem if other data were rewritten during the calculation.
+In order to avoid this, prepare two buffers, a read buffer and a write buffer, that do not rewrite the values ​​when performing calculations on the GPU.
+By exchanging these buffers every frame, data can be updated without conflict.
+//listnum[swap][Buffer swapping function(FluidBase.cs)][csharp]{
 void SwapComputeBuffer(ref ComputeBuffer ping, ref ComputeBuffer pong) {
     ComputeBuffer temp = ping;
     ping = pong;
@@ -657,8 +656,8 @@ void SwapComputeBuffer(ref ComputeBuffer ping, ref ComputeBuffer pong) {
 }
 //}
 
-=== 粒子のレンダリング
-//listnum[rendercs][パーティクルのレンダリング(FluidRenderer.cs)][csharp]{
+=== Particle rendering
+//listnum[rendercs][Particle rendering(FluidRenderer.cs)][csharp]{
 void DrawParticle() {
 
   Material m = RenderParticleMat;
@@ -672,10 +671,10 @@ void DrawParticle() {
   Graphics.DrawProcedural(MeshTopology.Points, solver.NumParticles);
 }
 //}
-10行目にて、流体粒子の位置計算結果を格納したバッファをマテリアルにセットし、シェーダーに転送します。
-11行目にて、パーティクルの個数分インスタンス描画をするよう命令しています。
+On the 10th line, set the buffer that stores the position calculation results of the fluid particles in the material and transfer it to the shader.
+In the 11th line, we are instructing to draw instances for the number of particles.
 
-//listnum[render][パーティクルのレンダリング(Particle.shader)][c]{
+//listnum[render][Particle rendering(Particle.shader)][c]{
 struct FluidParticle {
 	float2 position;
 	float2 velocity;
@@ -694,28 +693,28 @@ v2g vert(uint id : SV_VertexID) {
 	return o;
 }
 //}
-1-6行目にて、流体粒子の情報を受け取るための情報の定義を行います。
-この時、スクリプトからマテリアルに転送したバッファの構造体と定義を一致させる必要があります。
-位置データの受け取りは、14行目のようにid : SV_VertexIDでバッファの要素を参照することで行います。
+1-6 In the line, define the information to receive the fluid particle information.
+At this time, it is necessary to match the definition with the structure of the buffer transferred from the script to the material.
+The position data is received as in line 14. id : SV_VertexID This is done by referring to the buffer element with.
 
-あとは通常のパーティクルシステムと同様、@<img>{bill}のように
-ジオメトリシェーダーで計算結果の位置データを中心としたビルボード@<fn>{billboard}を作成し、
-粒子画像をアタッチしてレンダリングします。
-//image[bill][ビルボードの作成][scale=1]{
+After that, just like a normal particle system@<img>{bill}like
+Billboard centered on the position data of the calculation result with the geometry shader@<fn>{billboard}Create
+Attach the particle image and render.
+//image[bill][Billboard Creation][scale=1]{
 //}
 
-//footnote[billboard][表が常に視点方向を向くPlaneのことを指します。]
+//footnote[billboard][Plane where the table always faces the viewpoint.]
 
-== 結果
-//image[result][レンダリング結果]{
+== result
+//image[result][Rendering result]{
 //}
 
-動画はこちら(@<href>{https://youtu.be/KJVu26zeK2w})に掲載しています。
+Click here for video(@<href>{https://youtu.be/KJVu26zeK2w})It is posted in.
 
-== まとめ
-本章では、SPH法を用いた流体シミュレーションの手法を示しました。
-SPH法を用いることで、流体の動きをパーティクルシステムのように汎用的に扱うことができるようになりました。
+== Summary
+In this chapter, we showed the method of fluid simulation using SPH method.
+By using the SPH method, it has become possible to handle fluid movements in a general-purpose manner like a particle system.
 
-先述の通り、流体シミュレーションの手法はSPH法以外にもたくさんの種類があります。
-本章を通して、他の流体シミュレーション手法に加え、他の物理シミュレーション自体についても興味を持っていただき、
-表現の幅を広げていただければ幸いです。
+As mentioned above, there are many types of fluid simulation methods other than the SPH method.
+Throughout this chapter, you will be interested in other physical simulations in addition to other fluid simulation methods.
+We would appreciate if you could expand the range of expressions.
