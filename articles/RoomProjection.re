@@ -1,23 +1,24 @@
 = @<raw>{MultiPlane\nPerspectiveProjection}
 
-本章では直方体の形をした部屋の壁面や床面など複数の面にプロジェクターで映像を投影しCG世界の中にいるような体験ができる映像投影方法を紹介します。また、そのバックグラウンドとしてCGにおけるカメラの処理とその応用例について解説します。
-サンプルプロジェクトは、UnityGraphicsProgrammingのUnityプロジェクト@<fn>{project}内のAssets/RoomProjectionにありますのでよかったらご覧ください。
-また、本内容は「数学セミナー 2016年12月号」@<fn>{susemi}に 寄稿した内容を元に大幅に加筆修正を行ったものになります。
-//footnote[project][サンプルプロジェクト https://github.com/IndieVisualLab/UnityGraphicsProgramming]
+In this chapter, we will introduce an image projection method that allows you to project an image on multiple surfaces such as the walls and floors of a rectangular parallelepiped room with a projector and experience the experience of being in the CG world. In addition, I will explain the processing of the camera in CG and its application examples as the background.
+Please see the sample project in Assets/RoomProjection in Unity Project @<fn>{project} of Unity Graphics Programming.
+In addition, this content is "Math Seminar December 2016 Issue"@<fn>{susemi} Based on the content contributed to.
+//footnote[project][Sample project https://github.com/IndieVisualLab/UnityGraphicsProgramming]
+//footnote[project][LIAM PUT ENGLISH TRANSLATION PROJECT HERE]
 //footnote[susemi][https://www.nippyo.co.jp/shop/magazine/7292.html]
 
 
 
-== CGにおけるカメラの仕組み
-一般的なCGにおけるカメラ処理とは、透視投影変換を用いて見えている範囲の３Dモデルを２次元画像へ射影する処理を行います。
-透視投影変換は、各モデルの中心を原点に持つローカル座標系、CG世界の一意に決めた場所を原点にするワールド座標系、カメラを中心としたビュー座標系、クリッピング用のクリップ座標系（これはwも意味を持つ４次元の座標系で、３次元化したものを@<kw>{NDC,Normalized Device Coordinates,正規化デバイス座標系}と呼びます）、出力画面の２次元の位置を表すスクリーン座標系、という順番で頂点の座標を射影していきます。
+== Mechanism of camera in CG
+The camera process in general CG is a process of projecting a visible 3D model to a 2D image using perspective projection conversion.
+The perspective projection transformation is a local coordinate system whose origin is the center of each model, a world coordinate system whose origin is a uniquely determined location in the CG world, a view coordinate system centered on the camera, and a clip coordinate system for clipping (this Is a four-dimensional coordinate system in which w is also meaningful, and a three-dimensional one is called @<kw>{NDC,Normalized Device Coordinates}, which represents the two-dimensional position of the output screen. Project the coordinates of the vertices in the order of screen coordinate system.
 
-//image[spaces][座標変換の流れ]
+//image[spaces][Flow of coordinate conversion]
 
-また、これらの変換はそれぞれ１つの行列で表すことができるのであらかじめ行列同士を乗算しておくことで、いくつかの座標変換を行列とベクトルの乗算１回で済ませる方法もよく行われています。
+Also, since each of these transformations can be represented by one matrix, it is often practiced to multiply the matrices in advance so that several coordinate transformations can be done only once by multiplying the matrix and the vector.
 
-== 複数カメラでのパースの整合性
-CGにおけるカメラでは、頭頂点をカメラの位置に、底面をカメラの向きに合わせた四角錐を視錐台と呼び、カメラの射影を表す３Dボリュームとして図示できます。
+== Perspective consistency with multiple cameras
+With a camera in CG, a quadrangular pyramid whose head vertex is located at the camera position and whose bottom is aligned with the camera's orientation is called a viewing frustum, and can be illustrated as a 3D volume representing the projection of the camera.
 
 //image[frustum][視錐台][scale=0.5]
 
@@ -38,7 +39,7 @@ CGにおけるカメラでは、頭頂点をカメラの位置に、底面をカ
 
  * @<m>{C}: クリップ座標系おける位置ベクトル
  * @<m>{V}: をビュー座標系における位置ベクトル
- 
+
  として式で表すと以下のようになります。
 //texequation{
 C = Proj * V

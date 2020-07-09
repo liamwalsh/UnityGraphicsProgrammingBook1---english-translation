@@ -1,47 +1,47 @@
-# ProjectionSprayの紹介
+# Introduction of Projection Spray
 
-## はじめに
+## Introduction
 
-こんにちは！すぎのひろのりです！では残念ながらありません。
+Hello! It's Hirono Sugi! But unfortunately not.
 
-締め切りも近づいてきたある日、「すぎっちょ記事書いてる？」と問うたところ「あ！」とだけおっしゃり、どうやら完全に失念されておったようです。最近忙しそうなのですが、せっかくのこの機会、彼の実績を紹介したいのもあり、ここは簡単に代筆でお送りします。
+The deadline was approaching one day, and when I asked, "Is there an article written in Sugicho?", he just said "Ah!", and apparently he was completely forgotten. I've been busy lately, but I'd like to take this opportunity to share his achievements, so I'll send you a copy of this easily.
 
 ### ProjectionSpray
-すぎっちょは制作物をGithubに積極的に公開しており、その中でも個人的に面白いなと思ったのがこちらです。
+Sugicchi actively publishes his work on Github, and here I personally find it interesting.
 
 [https://github.com/sugi-cho/ProjectionSpray](https://github.com/sugi-cho/ProjectionSpray)
 
-3Dモデルにスプレーを吹きかけるようにして色をつけることができます。
+You can add color by spraying a 3D model.
 
-#### デモ画像
+#### Demo image
 
-![デモ画像1](articles/images/sugino/projectionspray-001.png)
+![Demo image 1](articles/images/sugino/projectionspray-001.png)
 
-スプレーデバイスからスプレーが噴出し、ボディの表面に色が塗られます。
+The spray is emitted from the spray device, and the surface of the body is colored.
 
-![デモ画像2](articles/images/sugino/projectionspray-002.png)
+![Demo image 2](articles/images/sugino/projectionspray-002.png)
 
-謎のフェチズムを感じます。
+I feel a mysterious fetishism.
 
-![デモ画像3](articles/images/sugino/projectionspray-003.png)
+![Demo image 3](articles/images/sugino/projectionspray-003.png)
 
-ステンシルのようなことも！
+Something like a stencil!
 
-![デモ画像4](articles/images/sugino/projectionspray-004.png)
+![Demo image 4](articles/images/sugino/projectionspray-004.png)
 
 Unity！
 
-## まとめ
+## Summary
 
-次回があれば、是非とも詳しい解説をお願いしたいものです。
+If there is next time, I would like to request detailed explanation.
 
-すぎっちょが、面接時、自分と、似たものを、感じる、と言っていた同僚の仲田さんのリポジトリも、Unityの便利で優れたコードが多数あげられておりおすすめです。
+The colleague Nakata-san's repository, where Sugichicho said that he felt something similar to himself at the time of the interview, is recommended because it has a lot of useful and excellent code for Unity.
 
 
 [https://github.com/nobnak](https://github.com/nobnak)
 
 
-失礼いたしました。
+excuse me.
 
 
 (｡･ˇ_ˇ･｡)

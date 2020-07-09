@@ -1,5 +1,5 @@
 
-= まえがき
+= Preface
 
 
 This book mainly describes the technology related to graphics programming by Unity.

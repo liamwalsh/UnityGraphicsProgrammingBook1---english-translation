@@ -1,74 +1,74 @@
 
-= MCMCで行う３次元空間サンプリング
+= 3D spatial sampling performed by MCMC
 
-== はじめに
-
-
-本章ではサンプリング手法について解説していきます。今回取り上げるのは、ある確率分布の中から適当な値を複数サンプリングしてくるMCMC（マルコフ連鎖モンテカルロ法）というサンプリング方法です。
+== Introduction
 
 
-
-ある確率分布からサンプリングしてくる方法として最も簡単な方法に棄却法という方法がありますが、３次元空間でのサンプリングでは棄却される領域が大きく実際の運用に耐えません。そこでMCMCを使うことで高次元においても効率よくサンプリングできるというのが、本章の内容です。
+In this chapter, we will explain the sampling method. This time, we will focus on a sampling method called MCMC (Markov chain Monte Carlo method) that samples appropriate values ​​from a certain probability distribution.
 
 
 
-MCMCに関する情報は、一方では書籍など体系だった情報は統計屋さん向けのものでプログラマにとっては冗長な割に実装までの手引が存在せず、他方ネットにある情報は１０数行のサンプルコードが記載されているだけで理論的な背景へのケアがないため、理論と実装を手早く一気通貫に理解できるコンテンツが存在しないのが実情です。次節以降の具体的な解説はできるだけそういった内容になるように心がけました。
+The simplest method for sampling from a certain probability distribution is the rejection method. However, sampling in a three-dimensional space causes a large rejected area and cannot be used in actual operation. Therefore, it is the content of this chapter that MCMC can be used for efficient sampling even in high dimensions.
 
 
 
-MCMCの背景となる確率の解説は、厳密を期せばそれこそ本が一冊書けるほどの内容です。今回は安心して実装できる最小限の理論的背景の説明をモットーに、定義の厳密性は程々に、なるだけ直感的な表現を目指しました。数学については大学初年度程度、プログラムについては仕事で少しでも使ったことがある程度の方なら難なく読める内容かなと思います。
+On the one hand, the information about MCMC is for books such as books, which is for statisticians, but it is redundant for programmers, but there is no guide to implementation. The fact is that there is no content to understand the theory and implementation quickly and in a comprehensive manner, as it is only described and there is no care for the theoretical background. I have tried to make the concrete explanations in the following sections as much as possible.
 
 
 
-== サンプルリポジトリ
-
-
-本章ではUnityGraphicsProgrammingのUnityプロジェクトhttps://github.com/IndieVisualLab/UnityGraphicsProgramming内にあるAssets/ProceduralModeling以下をサンプルプログラムとして用意しています。
+The explanation of the probability that is the background of MCMC is such that it is possible to write one book if strict. This time, with the motto of explaining the minimum theoretical background that can be implemented with peace of mind, the rigor of the definition was moderate, and the aim was to be as intuitive as possible. Mathematics is about the first year of university, and I think that the program can be read without difficulty by those who have used it a little for work.
 
 
 
-== 確率に関する基礎知識
+== Sample repository
 
 
-MCMCの理論を理解するには、まずは確率についての基礎的な内容を抑えておく必要があります。
-ただし今回MCMCを理解するために押さえておくべき概念は少なく、以下の４つだけです。尤度も確率密度関数も必要なしです！
-
- * 確率変数
- * 確率分布
- * 確率過程
- * 定常分布
+In this chapter, Unity Project of Unity Graphics Programming https://github.com/IndieVisualLab/UnityGraphicsProgramming内にあるAssets/ProceduralModeling以下をサンプルプログラムとして用意しています。
+The translated code (comments in English can be found here https://github.com/LIAMPUTCODEHERE) TODO:
 
 
-
-順に見ていきましょう。
-
-
-=== 確率変数
+== Basic knowledge about probability
 
 
-ある事象が確立 P(X) で起こるときの、この実数Xを確率変数と呼びます。例えば「サイコロの５の目が出る確率は1/6である」という時に「５の目」が確率変数にあたり「1/6」が確率に当たります。先程の文を一般的に言い換えると「サイコロのXの目がでる確率はP(X)である」と言い換えることができます。
+To understand the theory of MCMC, it is first necessary to suppress the basic contents of probability.
+However, there are few concepts that should be held in order to understand MCMC, and there are only the following four. No likelihood or probability density function is needed!
+
+ * Random variable
+ * Probability distribution
+ * Stochastic process
+ * Stationary distribution
 
 
 
-ちなみにすこし定義らしい書き方をすると、確率変数Xは標本空間Ω（＝起こる可能性のある全ての事象）から選ばれた元ω（＝起こった一つの事象）について、実数であるXを返す写像 X = X(ω) と書くことができます。
+Let's look at them in order.
 
 
-=== 確率過程
+=== Random variable
 
 
-先程の確率変数の後半で若干ややこしい定義を付け加えたのは、確率変数Xが X = X(ω) という書き方で表されるという前提に立つと、確率過程の理解が簡単になるからです。確率過程とは、先程のXに時間の条件を付け加えたもので X = X(ω, t) と表すことができるもののこと。つまり確率過程は時間の条件を添えた確率変数の一種と考えることができます。
+This real number X when an event occurs at the probability P(X) is called a random variable. For example, when saying "the probability of getting a 5 on the die is 1/6", "5" is the random variable and "1/6" is the probability. In other words, the above sentence can be rephrased as follows: "The probability that an X on the die rolls is P(X)".
 
 
-=== 確率分布
+
+By the way, if we write it a bit like a definition, the random variable X is a map X that returns a real number X for the element ω (=one event that occurred) selected from the sample space Ω (= all the events that may occur). = X(ω) can be written.
 
 
-確率分布は、確率変数 X と 確率 P(X) との対応関係を示すものです。よく縦軸に確率 P(X) 横軸に X を取ったグラフで表します。
+=== Stochastic process
 
 
-=== 定常分布
+I added a slightly confusing definition in the latter half of the random variable because the assumption that the random variable X is expressed as X = X(ω) simplifies the understanding of the stochastic process. The stochastic process is the one obtained by adding the time condition to the previous X and can be expressed as X = X(ω, t). In other words, the stochastic process can be considered as a kind of random variable with the condition of time.
 
 
-一つ一つの点は遷移しても全体の分布が不変であるような分布。分布 P とある遷移行列 π について、πP = P を満たす P を定常分布と呼びます。この定義だけではわかりにくいですが、以下の図を見れば明らかです。
+=== Probability distribution
+
+
+The probability distribution shows the correspondence between the random variable X and the probability P(X). It is often expressed as a graph with probability P(X) on the vertical axis and X on the horizontal axis.
+
+
+=== Stationary distribution
+
+
+Each point is a distribution in which the overall distribution remains unchanged even after a transition. For a distribution P and some transition matrix π, P that satisfies πP = P is called a stationary distribution. This definition is hard to understand, but it's clear from the figure below.
 
 
 
@@ -77,19 +77,18 @@ MCMCの理論を理解するには、まずは確率についての基礎的な�
 
 
 
-== MCMCの概念
+== MCMC concept
 
 
-さて本節ではMCMCを構成する概念について触れていきます。@<br>{}
-MCMCは最初に述べたように、ある確率分布の中から適当な値をサンプリングしてくる手法なのですが、より具体的には、与えられた分布が定常分布であるという条件の下でモンテカルロ法(Monte Carlo)とマルコフ連鎖(Markov chain)によってサンプリングする手法を指します。以下ではモンテカルロ法、マルコフ連鎖、定常分布、の順に解説をおこなっていきます。
+In this section, I will touch on the concepts that make up MCMC.@<br>{}
+As mentioned at the beginning, MCMC is a method of sampling an appropriate value from a certain probability distribution, but more concretely, the Monte Carlo method It refers to the method of sampling by (Monte Carlo) and Markov chain. In the following, we will explain in order of Monte Carlo method, Markov chain, and stationary distribution.
 
 
-=== モンテカルロ法
+=== Monte Carlo method
 
 
-モンテカルロ法とは、擬似乱数を使った数値計算やシミュレーションの総称です。@<br>{}
-よくモンテカルロ法による数値計算の導入に使われる例に、以下のような円周率の計算があります。
-
+The Monte Carlo method is a general term for numerical calculation and simulation using pseudo random numbers. @<br>{}
+An example that is often used to introduce numerical calculations by the Monte Carlo method is the calculation of pi as shown below.
 
 //emlist{
 float pi;
@@ -106,14 +105,14 @@ pi = 4 * count / trial;
 //}
 
 
-要するに1 x 1の正方形の中で扇形の円の中に入った試行数と全体の試行数の比が面積比になるので、そこから円周率を出す事ができるというものです。簡単な例ですが、これもモンテカルロ法です。
+In short, the ratio of the number of trials in a fan-shaped circle in a 1 x 1 square to the total number of trials is the area ratio, so the pi can be calculated from that. As a simple example, this is also the Monte Carlo method.
 
 
-=== マルコフ連鎖
+=== Markov chain
 
 
-マルコフ連鎖は、マルコフ性を満たす確率過程のうち、状態が離散的に記述できるものを指します。@<br>{}
-マルコフ性とは、ある確率過程の将来状態の確率分布が現在状態のみに依存し、過去の状態に依存しない性質のことです。
+A Markov chain is a stochastic process that satisfies Markovity and whose states can be described discretely. @<br>{}
+Markov property is a property in which the probability distribution of future states of a stochastic process depends only on the current state and not on the past states.
 
 
 
@@ -123,15 +122,15 @@ pi = 4 * count / trial;
 
 
 
-上図のようにマルコフ連鎖では将来の状態は現在の状態のみに依存して、過去の状態には直接的には影響しません。
+In the Markov chain as shown above, the future state depends only on the present state, and does not directly affect the past state.
 
 
-=== 定常分布
+=== Stationary distribution
 
 
-MCMCでは擬似乱数を使ってある任意の分布から与えられた定常分布へと収束していく必要があります。というのも、与えられた分布に収束しないと毎回違う分布からサンプリングしてしまうし、定常分布でないと上手く連鎖的にサンプリングできません。任意の分布が与えられた分布へと収束するには、以下の二つの条件を満たす必要があります。
+In MCMC, it is necessary to converge from a given distribution using pseudo-random numbers to a given stationary distribution. Because, if it does not converge to the given distribution, it will sample from a different distribution every time, and unless it is a stationary distribution, it will not be able to sample successfully in a chain. In order for an arbitrary distribution to converge to a given distribution, the following two conditions must be met.
 
- * 既約性・・・分布が複数の部分に別れていてはいけないという条件。確率分布上のある点から遷移を繰り返していく際に、到達できない点が存在してはならない
+ * Irreducibility: the condition that the distribution must not be divided into multiple parts. When repeating the transition from a certain point on the probability distribution, there must be no unreachable points
 
 
 
@@ -139,7 +138,7 @@ MCMCでは擬似乱数を使ってある任意の分布から与えられた定�
 //}
 
 
- * 非周期性・・・どんなｎに対してもｎ回で元いた場所に戻ってこれるという条件。例えば円周上に並んだ分布の中で、一つ飛ばしにしか遷移できないとった条件が存在してはならない。
+ * Non-periodicity: The condition of returning to the original place n times for any n. For example, there should be no condition that only one skip can be made in the distribution lined up on the circumference.
 
 
 
@@ -149,36 +148,36 @@ MCMCでは擬似乱数を使ってある任意の分布から与えられた定�
 
 
 
-この２つの条件を満たしていればある任意の分布は与えられた定常分布に収束することができます。これをマルコフ過程のエルゴード性といいます。
+As long as these two conditions are met, any given distribution can converge to the given stationary distribution. This is called the ergodic property of the Markov process.
 
 
-=== メトロポリス法
+=== Metropolis method
 
 
-さて与えられた分布が先程のエルゴート性を満たす分布かどうかをいちいち調べるのは骨が折れることなので、多くの場合には条件を強めにとって「詳細釣り合い」という条件を満たす範囲で調べていきます。詳細釣り合いをみたすマルコフ連鎖の手法の一つがメトロポリス法と呼ばれるものです。
-
-
-
-メトロポリス法は以下の２ステップを踏むことでサンプリングを行います
-
- 1. 擬似乱数で遷移先の候補 x を選ぶ。x は Q(x|x') = Q(x'|x) を満たすような分布 Q に従って生成され、この分布 Q を提案分布と呼ぶ。提案分布としてガウス分布が選ばれることが多い。
- 1. 1 と独立な乱数を発生させて、その乱数を使ってある基準が満たされれば遷移先候補を採用する。  具体的には、一様乱数 0 <= r < 1 に対して目標分布上の確率値 P(x) と遷移候補先の確率値 P(x') の比P(x')/P(x) が、 P(x')/P(x) > r を満たせば遷移候補先へ遷移する。
+Now, it is difficult to check whether or not the given distribution satisfies the ergot characteristics mentioned earlier, so in many cases, we will strengthen the condition and investigate within the range of "detailed balance". One of the Markov chain methods that achieves a detailed balance is called the metropolis method.
 
 
 
-メトロポリス法のメリットは、確率分布の極大値に遷移しきった後も r の値が小さければ確率値の小さい方に遷移するので、極大値周辺で確率値に比例したサンプリングができることです。
+The Metropolis method performs sampling in the following two steps
+
+ 1. Select a transition destination candidate x with a pseudo-random number. x is generated according to a distribution Q that satisfies Q(x|x') = Q(x'|x), and this distribution Q is called the proposed distribution. The Gaussian distribution is often chosen as the proposed distribution.
+ 1. A random number independent of 1 is generated, and if a certain criterion is satisfied using the random number, the transition destination candidate is adopted. Specifically, for a uniform random number 0 <= r <1, ​​the ratio P(x')/P(x of the probability value P(x) on the target distribution and the probability value P(x') of the transition candidate ) Satisfies P(x')/P(x)> r, transitions to the transition candidate destination.
 
 
 
-ちなみにメトロポリス法はメトロポリス・ヘイスティング法（MH法）の一種です。メトロポリス法は提案分布に左右対称な分布を使いますが、MH法ではこの限りではありません。
+The merit of the Metropolis method is that even after the transition to the maximum value of the probability distribution, if the value of r is small, the transition is to the smaller probability value, so sampling can be performed in proportion to the maximum value around the maximum value.
 
 
-== ３次元サンプリング
+
+By the way, the Metropolis method is a type of Metropolis-Hasting method (MH method). The Metropolis method uses a symmetrical distribution for the proposed distribution, but the MH method does not have this limitation.
 
 
-では実際にコードの抜粋を見ながら、どのようにMCMCを実装するかを見ていきましょう。
+== Three-dimensional sampling
 
-先ず３次元の確率分布を用意します。これを目標分布と呼びます。実際にサンプリングしたい分布なので「目標」分布です。
+
+Now let's see how to implement MCMC while actually looking at the code excerpt.
+
+First, prepare a three-dimensional probability distribution. This is called the target distribution. This is the “target” distribution because it is the distribution that you want to actually sample.
 
 
 //emlist{
@@ -197,11 +196,11 @@ void Prepare()
 //}
 
 
-今回はシンプレックスノイズを目標分布として採用しました。
+This time, we used simplex noise as the target distribution.
 
 
 
-次に実際にMCMCを走らせます。
+Next, actually run MCMC.
 
 
 //emlist{
@@ -236,16 +235,16 @@ public void Reset()
 //}
 
 
-コルーチンを使って処理を走らせます。MCMCは一つのマルコフ連鎖が終わると全く別のところから処理が始まるため、概念的には並列処理と考えることができます。今回はReset関数を使って、一連の処理が終わった後に別の処理を走らせるようにしています。この作業を行うことで、確率分布の極大値が多数存在する場合にも上手くサンプリングができるようになります。
+Run the process using a coroutine. MCMC can be conceptually thought of as parallel processing, since processing starts at a completely different place when one Markov chain ends. This time, I use the Reset function to run another process after the series of processes is completed. By doing this, you will be able to perform good sampling even when there are many maximum values ​​of the probability distribution.
 
 
 
-遷移を始めて最初の方は目標分布から離れた点である可能性が高いので、この区間はサンプリングを行わず捨ててしまします（burn-in）。十分目標分布に近づいたらサンプリングと遷移のセットを一定回数行い、終わったらまた別の一連の処理に入ります。
+Since the first point after the transition is likely to be a point away from the target distribution, this section is discarded without sampling (burn-in). When the target distribution is sufficiently approached, sampling and transition are set a certain number of times, and then another series of processing is started.
 
 
 
-最後に遷移を決定する処理です。@<br>{}
-３次元ですので、提案分布は以下のように三変量の標準正規分布を用います。
+Finally, the process of determining the transition.@<br>{}
+Since it is three-dimensional, the proposed distribution uses the trivariate standard normal distribution as follows.
 
 
 //emlist{
@@ -268,7 +267,7 @@ public static float rand_gaussian(float mu, float sigma)
 //}
 
 
-メトロポリス法では左右対称な分布である必要があるので、平均値を０以外に設定することは無いですが、分散を１以外にする場合は、コレスキー分解を使って以下のように導出します。
+The Metropolis method requires a symmetrical distribution, so there is no need to set the mean value to anything other than 0, but if the variance is to be other than 1, use Cholesky decomposition to derive it as follows. I will.
 
 
 //emlist{
@@ -291,8 +290,8 @@ public static Vector3 GenerateRandomPoint(Matrix4x4 sigma)
 //}
 
 
-遷移先の決定は、提案分布（上の一点である）nextと直前の点_currそれぞれの、目標分布上における確率の比を取り一様乱数より大きければ遷移、そうでなければ遷移しない、とします。@<br>{}
-確率値は、遷移先の座標に対応する確立値を見つける処理が重いため(O(n^3)の処理量)、近似計算を行っています。今回は目標分布が連続的に変化する分布を用いているので、距離に反比例する加重平均を行うことで近似的に確立値を導出しています。
+The transition destination is determined by taking the ratio of the probabilities of the proposed distribution (which is one point above) next and the immediately preceding point _curr on the target distribution, and transitioning if it is greater than a uniform random number, and not transitioning otherwise. I will. @<br>{}
+The probability value is approximated because it takes a lot of processing to find the probability value corresponding to the transition destination coordinate (the processing amount of O(n^3)). Since the target distribution uses a distribution that changes continuously this time, the probability value is approximately derived by performing a weighted average that is inversely proportional to the distance.
 
 
 //emlist{
@@ -328,12 +327,12 @@ float Density(Vector3 pos)
 }
 //}
 
-== その他
+== Other
 
 
-今回リポジトリに３次元の棄却法（円の例で示したような簡単なモンテカルロ法）のサンプルも入っているので比較してみるとよいでしょう。棄却法では棄却の基準値を強めに取るとほとんどサンプリングが上手くできないのに対して、MCMCでは同じようなサンプリング結果をよりスムーズに提示することができます。またMCMCではステップ毎のランダムウォークの幅を小さくすれば、一連の連鎖の中では近しい空間からサンプリングするため、植物や花の群生を簡単に再現することができます。
+This time, the repository also contains a sample of the three-dimensional rejection method (a simple Monte Carlo method as shown in the circle example), so you can compare it. In the rejection method, if the reference value for rejection is set to be strong, the sampling cannot be done well, but MCMC can present similar sampling results more smoothly. In MCMC, if you narrow the width of the random walk for each step, you can easily reproduce plant and flower colonies because it samples from close spaces in a series of chains.
 
 
-== 参考文献
- * 久保拓弥（2012）データ解析のための統計モデリング入門――一般化線形モデル・階層ベイズモデル・MCMC (確率と情報の科学) 岩波書店
- * Olle Haggstrom, 野間口 謙太郎 (2017) やさしいMCMC入門: 有限マルコフ連鎖とアルゴリズム 共立出版
+== references
+ * Kubo Takuya (2012) Introduction to statistical modeling for data analysis: generalized linear model, hierarchical Bayesian model, MCMC (science of probability and information) Iwanami Shoten
+ * Olle Haggstrom, Kentaro Nomaguchi (2017) Introduction to Easy MCMC: Finite Markov Chain and Algorithm Kyoritsu Publishing
