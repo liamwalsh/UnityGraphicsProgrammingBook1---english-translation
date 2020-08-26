@@ -8,7 +8,7 @@
 # major versionが違うときにはエラーを出す。
 review_version: 2.0
 
-# ほかの設定ファイルの継承を指定できる。同じパラメータに異なる値がある場合は、
+# You can specify inheritance for other configuration files. If the same parameter has different values,
 # 呼び出し元の値が優先される。
 # A.yml、B.ymlのパラメータを継承する例。A.ymlとB.ymlに同じパラメータがある
 # 場合、B.ymlの値が優先される。さらに今このファイルに同じパラメータがあるなら、
@@ -19,7 +19,7 @@ review_version: 2.0
 # ブック名(ファイル名になるもの。ASCII範囲の文字を使用)
 bookname: book
 # 記述言語。省略した場合はja
-language: ja
+language: en
 
 # 書名
 # 読みを入れる例 booktitle: {name: "Re:VIEW EPUBサンプル", file-as: "リビューイーパブサンプル"}
@@ -136,7 +136,7 @@ toc: true
 # cover: null
 #
 # 表紙に配置し、書籍の影絵にも利用する画像ファイル。省略した場合はnull (画像を使わない)。画像ディレクトリ内に置いてもディレクトリ名は不要(例: cover.jpg)
-# coverimage: cover.png
+coverimage: cover.png
 #
 # 表紙の後に大扉ページを作成するか。省略した場合はnull (作成しない)
 titlepage: true
