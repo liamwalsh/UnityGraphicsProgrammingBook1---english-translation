@@ -4,11 +4,11 @@
 == Introduction
 
 Procedural Modeling is a technique for building 3D models using rules.
-Modeling generally means using the modeling software Blender or 3ds Max to move the vertices and line segments and operate by hand to obtain the desired shape. By contrast, the approach of writing rules and obtaining the shape as a result of a series of automated processes is called procedural modeling.
+Modeling generally means using the modeling software Blender or 3ds Max to move the vertices and line segments and manipulating them by hand to sculpt the desired shape. By contrast, the approach of writing rules and obtaining the shape as a result of a series of automated processes is called procedural modeling.
 
-Procedural modeling has been applied in various fields, and for example, in games, it is used for generation of terrain, modeling of plants, construction of cities, etc. It enables content design such as changing the structure.
+Procedural modeling has been applied in various fields, for example in games it is used for generation of terrain, modeling of plants, construction of cities, etc. It enables content design such as changing the structure.
 
-Also in the field of architecture and product design, the method of procedurally designing shapes is actively used using Grasshopper@<fn>{grasshopper}, which is a CAD software plug-in called Rhinoceros@<fn>{rhinoceros}. It has been. LW:TODO:edit
+In the field of architecture and product design the method of procedurally designing shapes is actively used using Grasshopper@<fn>{grasshopper}, which is a CAD software plug-in called Rhinoceros@<fn>{rhinoceros}.
 //footnote[rhinoceros][http://www.rhino3d.co.jp/]
 //footnote[grasshopper][http://www.grasshopper3d.com/]
 
