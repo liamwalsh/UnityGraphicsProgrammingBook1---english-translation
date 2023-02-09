@@ -20,22 +20,22 @@ Also, since each of these transformations can be represented by one matrix, it i
 == Perspective consistency with multiple cameras
 With a camera in CG, a quadrangular pyramid whose head vertex is located at the camera position and whose bottom is aligned with the camera's orientation is called a viewing frustum, and can be illustrated as a 3D volume representing the projection of the camera.
 
-//image[frustum][視錐台][scale=0.5]
+//image[frustum][Convert][scale=0.5]
 
-２つのカメラの視錐台が頭頂点を共有し側面が接していれば、投影面が別々の方向を向いていても映像的には繋がり、かつ、頭頂点から見たときのパースペクティブが一致します。
+If the two -camera's paradise share the top point and the side is in contact, even if the projection surface is facing a separate direction, it will be connected visually, and the perpetrive when viewed from the top of the head matches.increase.
 
-//image[frustum2][接する視錐台（わかりやすいように少し離して配置しています）]
+//image[frustum2][Aiming platform to contact (arranged a little separately so that it is easy to understand)]
 
-これは視錐台を無数の視線の集合とみなすことで「視線同士が連続している（＝パースペクティブ上矛盾のない映像を投影することができる）」と考えることで理解できます。
-この考えを５つのカメラまで拡張し、５つの視錐台が頭頂点を共有しそれぞれ隣接する視錐台と接するような配置になるよう画角を調整することで、部屋の各面に対応した映像を生成することができます。理論上は天井も含めた６面も可能ですが今回はプロジェクタの設置スペースとして考え、天井を除く５面を想定しています。
+This can be understood by considering that the paraphyto is regarded as a countless gaze set, "the gaze is continuous (= can projected a perpetriced image)."
+This idea is expanded to five cameras, adjusting the angle of view so that the five paraphys can share the top point and interact with each other with the adjacent radios stand, so that they are handled to each side of the room.You can generate a video.Theoretically, 6 sides including the ceiling are possible, but this time as a projector installation space, it is assumed to be 5 sides excluding the ceiling.
 
-//image[frustum5][部屋に対応した５つの視錐台]
+//image[frustum5][Five paraphrases corresponding to the room]
 
-この頭頂点、つまり全てのカメラの位置に相当する場所から鑑賞することで、部屋どの方向を見てもパースペクティブ上矛盾のない映像を鑑賞することができます。
+By appreciating from the top of the head, that is, the location equivalent to the position of all the camera, you can appreciate the perpete -based images regardless of the direction of the room.
 
 
-== プロジェクション行列の導出
-プロジェクション行列（以下@<m>{Proj}）はビュー座標系からクリップ座標系へ変換する行列です。
+== Derivation of projection matrix
+The projection matrix (hereinafter@<m> {Proj}) is a matrix that converts from a view coordinate system to a clip coordinate system.
 
  * @<m>{C}: クリップ座標系おける位置ベクトル
  * @<m>{V}: をビュー座標系における位置ベクトル
